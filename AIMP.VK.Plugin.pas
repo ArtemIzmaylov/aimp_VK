@@ -51,10 +51,9 @@ const
   FileNameForUserDB = 'AIMPVKPlugin.db';
   VKName = 'AIMP VK Plugin';
 
-  // Данные приложения
-  VKAppID =
-  VKAppSecret =
-  VKAppUserAgent =
+  VKAppID = 5776857;
+  VKAppSecret = '';
+  VKAppUserAgent = 'com.vk.windows_app/20302';
 
   VKPluginIDBase = 'AIMP.VK';
 
