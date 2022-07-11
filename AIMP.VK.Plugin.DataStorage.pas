@@ -85,7 +85,7 @@ type
     CacheFmtAudios = 'Id-%d';
     CacheFmtAudiosInAlbum = 'Id-%d-%d';
 
-    MaxAlbumCount = 500;
+    MaxPlaylistCount = 500;
   strict private
     FCache: TAIMPVKDataStorageCache;
     FManager: IAIMPMLDataStorageManager;
@@ -610,9 +610,9 @@ begin
       AMaxCount: Integer;
       ATempResult: TVKPlaylists;
     begin
-      AMaxCount := MaxAlbumCount;
+      AMaxCount := MaxPlaylistCount;
       repeat
-        ATempResult := Service.AudioGetPlaylists(OwnerID, Playlists.Count, TVKService.MaxAlbumGetCount);
+        ATempResult := Service.AudioGetPlaylists(OwnerID, Playlists.Count, TVKService.MaxPlaylistGetCount);
         try
           if ATempResult.Count > 0 then
           begin

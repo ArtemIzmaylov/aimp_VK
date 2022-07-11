@@ -98,7 +98,7 @@ type
 
   TVKService = class
   public const
-    MaxPlaylistGetCount = 1000;
+    MaxPlaylistGetCount = 100;
     MaxAudioGetCount = 6000;
     MaxAudioPopularCount = 1000;
     MaxAudioRecommendationCount = 1000;
