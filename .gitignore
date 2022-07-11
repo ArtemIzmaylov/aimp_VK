@@ -1,0 +1,6 @@
+build/
+.vscode
+__history
+*.delphilsp.json
+*.local
+*.identcache
