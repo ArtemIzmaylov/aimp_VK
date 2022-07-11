@@ -114,7 +114,7 @@ begin
     AIMP_PLUGIN_INFO_SHORT_DESCRIPTION:
       Result := 'Provides an ability to play music from VK.com';
     AIMP_PLUGIN_INFO_AUTHOR:
-      Result := 'VK_Master';
+      Result := 'Keller';
   else
     Result := '';
   end;
