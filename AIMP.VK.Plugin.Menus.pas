@@ -486,10 +486,10 @@ begin
 
   AddSimpleMenuItem(AMenuItem, LangLoadString('AIMPVKPlugin\NewAlbum'), TAIMPVKMenuItemAddToMyMusic.Create(Owner, DataSource, -1));
   AddSimpleMenuItem(AMenuItem, '-', nil);
-  Owner.DataStorage.EnumMyAlbums(
-    procedure (AAlbum: TVKAlbum)
+  Owner.DataStorage.EnumMyPlaylists(
+    procedure (APlaylist: TVKPlaylist)
     begin
-      AddSimpleMenuItem(AMenuItem, AAlbum.Title, TAIMPVKMenuItemAddToMyMusic.Create(Owner, DataSource, AAlbum.Id));
+      AddSimpleMenuItem(AMenuItem, APlaylist.Title, TAIMPVKMenuItemAddToMyMusic.Create(Owner, DataSource, APlaylist.Id));
     end);
 end;
 

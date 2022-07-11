@@ -1,4 +1,4 @@
-{************************************************}
+﻿{************************************************}
 {*                                              *}
 {*                AIMP VK Plugin                *}
 {*                                              *}
@@ -65,7 +65,8 @@ type
 
   IAIMPVKDataStorage = interface
   ['{3A8F4498-3EE8-48FF-ADFD-BA24D335A0CB}']
-    procedure EnumMyAlbums(AProc: TProc<TVKAlbum>);
+    procedure EnumSystemPlaylists(AProc: TProc<TVKPlaylist>);
+    procedure EnumMyPlaylists(AProc: TProc<TVKPlaylist>);
     procedure EnumMyFriends(AProc: TProc<TVKFriend>);
     procedure EnumMyGroups(AProc: TProc<TVKGroup>);
     procedure NotifyMyMusicChanged(AAlbumID: Integer = -1);
@@ -92,13 +93,14 @@ type
     // IAIMPMessageHook
     procedure CoreMessage(Message: Cardinal; Param1: Integer; Param2: Pointer; var Result: HRESULT); stdcall;
   protected
-    function AudioGetAlbums(OwnerID: Integer; IgnoreCache: Boolean = False): TVKAlbums;
+    function AudioGetPlaylists(OwnerID: Integer; IgnoreCache: Boolean = False): TVKPlaylists;
     procedure DoGetValueAsInt32(PropertyID: Integer; out Value: Integer; var Result: HRESULT); override;
     function DoGetValueAsObject(PropertyID: Integer): IInterface; override;
   public
     constructor Create(AService: TVKService; ADataBase: TACLSQLiteBase);
     destructor Destroy; override;
-    procedure EnumMyAlbums(AProc: TProc<TVKAlbum>);
+    procedure EnumSystemPlaylists(AProc: TProc<TVKPlaylist>);
+    procedure EnumMyPlaylists(AProc: TProc<TVKPlaylist>);
     procedure EnumMyFavePeople(AProc: TProc<TVKFriend>);
     procedure EnumMyFriends(AProc: TProc<TVKFriend>);
     procedure EnumMyGroups(AProc: TProc<TVKGroup>);
@@ -214,6 +216,7 @@ type
     procedure PopulateMusicCategories(AList: TAIMPVKDataProviderGroupingTreeData; ID: Integer);
     procedure PopulatePopularGenres(AList: TAIMPVKDataProviderGroupingTreeData);
     procedure PopulateSearchCategories(AList: TAIMPVKDataProviderGroupingTreeData);
+    procedure PopulateRecommended(AList: TAIMPVKDataProviderGroupingTreeData);
   protected
     function PopulateData(const AData: string): TAIMPVKDataProviderGroupingTreeData;
   public
@@ -253,7 +256,7 @@ type
     FFieldIndexTitle: Integer;
     FIgnoreCache: Boolean;
     FMessageText: string;
-    FOwnerAlbums: TVKAlbums;
+    FOwnerPlaylists: TVKPlaylists;
     FStorage: TAIMPVKDataStorage;
     FTempBuffer: UnicodeString;
 
@@ -266,11 +269,12 @@ type
     FOffset: Integer;
 
     function CachedRequest(const AQueryID: string; AProc: TCachedRequestProc): TVKAudios;
-    function GetAlbum(OwnerID, AlbumID: Integer): string;
+    function GetPlaylist(OwnerID, PlaylistID: Integer): string;
     function GetAudios(ACategory: TAIMPVKCategory; const AData: string): TVKAudios;
     function GetAudiosFromAlbum(const AOwnerAndAlbumIDPair: string): TVKAudios;
     function GetAudiosFromFavePosts: TVKAudios;
-    function GetAudiosFromID(ID: Integer; AAlbumID: Integer = 0): TVKAudios;
+    function GetAudiosFromID(ID: Integer): TVKAudios; overload;
+    function GetAudiosFromID(ID: Integer; APlaylistID: Integer): TVKAudios; overload;
     function GetAudiosFromNews: TVKAudios;
     function GetAudiosFromSearchQuery(ACategory: TAIMPVKCategory; const AData: string): TVKAudios;
     function GetAudiosFromWall(const AOwnerAndPostIDPair: string): TVKAudios; overload;
@@ -427,9 +431,31 @@ begin
   inherited Destroy;
 end;
 
-procedure TAIMPVKDataStorage.EnumMyAlbums(AProc: TProc<TVKAlbum>);
+procedure TAIMPVKDataStorage.EnumSystemPlaylists(AProc: TProc<TVKPlaylist>);
+const
+  SystemPlaylists: Array[0..7] of Integer = (-21, -22, -23, -25, -26, -27, -30, -31);
 begin
-  with AudioGetAlbums(Service.UserID) do
+  with Cache.Request<TVKPlaylists>(TVKPlaylists.Create, 'systemplaylists', procedure (APlaylists: TVKPlaylists)
+    var
+      ID: Integer;
+      ATempResult: TVKPlaylist;
+    begin
+      for ID in SystemPlaylists do
+      begin
+        ATempResult := Service.AudioGetPlaylistByID(Service.UserID, ID);
+        APlaylists.Add(ATempResult);
+      end;
+    end) do
+  try
+    Enum(AProc);
+  finally
+    Free;
+  end;
+end;
+
+procedure TAIMPVKDataStorage.EnumMyPlaylists(AProc: TProc<TVKPlaylist>);
+begin
+  with AudioGetPlaylists(Service.UserID) do
   try
     Enum(AProc);
   finally
@@ -576,30 +602,30 @@ begin
   FManager.Changed;
 end;
 
-function TAIMPVKDataStorage.AudioGetAlbums(OwnerID: Integer; IgnoreCache: Boolean = False): TVKAlbums;
+function TAIMPVKDataStorage.AudioGetPlaylists(OwnerID: Integer; IgnoreCache: Boolean = False): TVKPlaylists;
 begin
-  Result := Cache.Request<TVKAlbums>(TVKAlbums.Create, Format(CacheFmtAlbums, [OwnerID]),
-    procedure (Albums: TVKAlbums)
+  Result := Cache.Request<TVKPlaylists>(TVKPlaylists.Create, Format(CacheFmtAlbums, [OwnerID]),
+    procedure (Playlists: TVKPlaylists)
     var
       AMaxCount: Integer;
-      ATempResult: TVKAlbums;
+      ATempResult: TVKPlaylists;
     begin
       AMaxCount := MaxAlbumCount;
       repeat
-        ATempResult := Service.AudioGetAlbums(OwnerID, Albums.Count, TVKService.MaxAlbumGetCount);
+        ATempResult := Service.AudioGetPlaylists(OwnerID, Playlists.Count, TVKService.MaxAlbumGetCount);
         try
           if ATempResult.Count > 0 then
           begin
             ATempResult.OwnsObjects := False;
             AMaxCount := Min(AMaxCount, ATempResult.MaxCount);
-            Albums.AddRange(ATempResult);
+            Playlists.AddRange(ATempResult);
           end
           else
             Break;
         finally
           FreeAndNil(ATempResult);
         end;
-      until Albums.Count >= AMaxCount;
+      until Playlists.Count >= AMaxCount;
     end,
     IgnoreCache);
 end;
@@ -1022,6 +1048,8 @@ begin
         PopulateFriends(Result);
       TAIMPVKCategory.MyGroups:
         PopulateGroups(Result);
+      TAIMPVKCategory.Recommended:
+        PopulateRecommended(Result);
       TAIMPVKCategory.Popular:
         if AData = '' then
           PopulatePopularGenres(Result);
@@ -1072,7 +1100,7 @@ begin
   AList.Add(TAIMPVKCategory.MyFriends, True);
   AList.Add(TAIMPVKCategory.MyGroups, True);
   AList.Add(TAIMPVKCategory.MyFaves, True);
-  AList.Add(TAIMPVKCategory.Recommended, False);
+  AList.Add(TAIMPVKCategory.Recommended, True);
   AList.Add(TAIMPVKCategory.Search, True);
   AList.Add(TAIMPVKCategory.Popular, True);
 end;
@@ -1080,21 +1108,21 @@ end;
 procedure TAIMPVKDataProviderGroupingTreeSelection.PopulateMusicCategories(
   AList: TAIMPVKDataProviderGroupingTreeData; ID: Integer);
 var
-  AAlbum: TVKAlbum;
-  AAlbums: TVKAlbums;
+  APlaylist: TVKPlaylist;
+  APlaylists: TVKPlaylists;
   I: Integer;
 begin
   AList.Add(TAIMPVKCategory.MusicFromWall, False, ID).ImageIndex := AIMPML_FIELDIMAGE_DISK;
 
-  AAlbums := FStorage.AudioGetAlbums(ID);
+  APlaylists := FStorage.AudioGetPlaylists(ID);
   try
-    for I := 0 to AAlbums.Count - 1 do
+    for I := 0 to APlaylists.Count - 1 do
     begin
-      AAlbum := AAlbums.List[I];
-      AList.Add(TAIMPVKCategory.MusicFromAlbum, False, AAlbum.GetOwnerAndAudioIDPair, AAlbum.Title, AIMPML_FIELDIMAGE_DISK);
+      APlaylist := APlaylists.List[I];
+      AList.Add(TAIMPVKCategory.MusicFromAlbum, False, APlaylist.GetOwnerAndAudioIDPair, APlaylist.Title, AIMPML_FIELDIMAGE_DISK);
     end;
   finally
-    AAlbums.Free;
+    APlaylists.Free;
   end;
 end;
 
@@ -1111,6 +1139,16 @@ procedure TAIMPVKDataProviderGroupingTreeSelection.PopulateSearchCategories(ALis
 begin
   AList.Add(TAIMPVKCategory.SearchByGroup, False);
   AList.Add(TAIMPVKCategory.SearchByUser, False);
+end;
+
+procedure TAIMPVKDataProviderGroupingTreeSelection.PopulateRecommended(AList: TAIMPVKDataProviderGroupingTreeData);
+begin
+  FStorage.EnumSystemPlaylists(
+    procedure (APlaylist: TVKPlaylist)
+    begin
+      AList.Add(TAIMPVKCategory.MusicFromAlbum, False, APlaylist.GetOwnerAndAudioIDPair(), APlaylist.Title);
+    end
+  );
 end;
 
 { TAIMPVKDataProviderTable }
@@ -1158,7 +1196,7 @@ end;
 
 destructor TAIMPVKDataProviderTable.Destroy;
 begin
-  FreeAndNil(FOwnerAlbums);
+  FreeAndNil(FOwnerPlaylists);
   FreeAndNil(FData);
   inherited Destroy;
 end;
@@ -1198,7 +1236,7 @@ begin
   else if AFieldIndex = FFieldIndexCategory then
     Result := FCategory
   else if AFieldIndex = FFieldIndexAlbum then
-    Result := GetAlbum(FData[FIndex].OwnerID, FData[FIndex].AlbumID)
+    Result := GetPlaylist(FData[FIndex].OwnerID, FData[FIndex].AlbumID)
   else
     Result := '';
 end;
@@ -1254,17 +1292,17 @@ begin
   end;
 end;
 
-function TAIMPVKDataProviderTable.GetAlbum(OwnerID, AlbumID: Integer): string;
+function TAIMPVKDataProviderTable.GetPlaylist(OwnerID, PlaylistID: Integer): string;
 var
-  AAlbum: TVKAlbum;
+  APlaylist: TVKPlaylist;
 begin
   Result := '';
-  if AlbumID <> 0 then
+  if PlaylistID <> 0 then
   begin
-    if FOwnerAlbums = nil then
-      FOwnerAlbums := FStorage.AudioGetAlbums(OwnerID, FIgnoreCache);
-    if FOwnerAlbums.Find(OwnerID, AlbumID, AAlbum) then
-      Result := AAlbum.Title;
+    if FOwnerPlaylists = nil then
+      FOwnerPlaylists := FStorage.AudioGetPlaylists(OwnerID, FIgnoreCache);
+    if FOwnerPlaylists.Find(OwnerID, PlaylistID, APlaylist) then
+      Result := APlaylist.Title;
   end;
 end;
 
@@ -1323,15 +1361,27 @@ begin
     end);
 end;
 
-function TAIMPVKDataProviderTable.GetAudiosFromID(ID: Integer; AAlbumID: Integer = 0): TVKAudios;
+function TAIMPVKDataProviderTable.GetAudiosFromID(ID: Integer): TVKAudios;
 begin
   if ID = 0 then
     raise EAIMPVKDataStorageError.Create(LangLoadString('AIMPVKPlugin\NoData'));
 
-  Result := CachedRequest(Format(TAIMPVKDataStorage.CacheFmtAudiosInAlbum, [ID, AAlbumID]),
+  Result := CachedRequest(Format(TAIMPVKDataStorage.CacheFmtAudios, [ID]),
     function: TVKAudios
     begin
-      Result := Service.AudioGet(ID, AAlbumID, FOffset);
+      Result := Service.AudioGet(ID, FOffset);
+    end);
+end;
+
+function TAIMPVKDataProviderTable.GetAudiosFromID(ID: Integer; APlaylistID: Integer): TVKAudios;
+begin
+  if ID = 0 then
+    raise EAIMPVKDataStorageError.Create(LangLoadString('AIMPVKPlugin\NoData'));
+
+  Result := CachedRequest(Format(TAIMPVKDataStorage.CacheFmtAudiosInAlbum, [ID, APlaylistID]),
+    function: TVKAudios
+    begin
+      Result := Service.AudioGetFromPlaylist(ID, APlaylistID, FOffset);
     end);
 end;
 

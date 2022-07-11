@@ -98,7 +98,7 @@ type
 
   TVKService = class
   public const
-    MaxAlbumGetCount = 100;
+    MaxPlaylistGetCount = 1000;
     MaxAudioGetCount = 6000;
     MaxAudioPopularCount = 1000;
     MaxAudioRecommendationCount = 1000;
@@ -144,8 +144,8 @@ type
     procedure AudioAdd(const AAudios: TList<TPair<Integer, Integer>>; AlbumID: Integer); overload;
     function AudioAddAlbum(const Title: string): Integer;
     procedure AudioDelete(const OwnerID, AudioID: Integer);
-    function AudioGet(OwnerID, AlbumID, Offset: Integer; Count: Integer = MaxAudioGetCount): TVKAudios;
-    function AudioGetAlbums(OwnerID, Offset: Integer; Count: Integer = 50): TVKAlbums;
+    function AudioGet(OwnerID, Offset: Integer; Count: Integer = MaxAudioGetCount): TVKAudios;
+    function AudioGetFromPlaylist(OwnerID, PlaylistID, Offset: Integer; Count: Integer = MaxAudioGetCount): TVKAudios;
     function AudioGetByID(const OwnerAndAudioIDPair: string): TVKAudio; overload;
     function AudioGetByID(const OwnerID, AudioID: Integer): TVKAudio; overload;
     function AudioGetFromWall(OwnerID, Offset: Integer): TVKAudios;
@@ -157,6 +157,8 @@ type
     function AudioSearch(const S: string; Offset: Integer = 0; Count: Integer = 30): TVKAudios;
     function AudioSetBroadcast(const OwnerAndAudioIDPair: string): Boolean; overload;
     function AudioSetBroadcast(const OwnerAndAudioIDPair: string; const TargetID: Integer): Boolean; overload;
+    function AudioGetPlaylists(const OwnerID: Integer; Offset: Integer; Count: Integer = 100): TVKPlaylists;
+    function AudioGetPlaylistByID(const OwnerID, PlaylistID: Integer): TVKPlaylist;
 
     // NewsFeed
     function NewsGetAudios: TVKAudios;
@@ -192,7 +194,7 @@ uses
 const
   XMLResponse = 'response';
 
-  VKAPI_V = 'v=5.53';
+  VKAPI_V = 'v=5.131';
 
 { EVKError }
 
@@ -338,8 +340,8 @@ function TVKService.AuthorizationParseAnswer(const AAnswer: string): Boolean;
   end;
 
 begin
-  FToken := {TOAuth2.}ExtractParam(AAnswer, 'access_token');
-  FUserID := StrToIntDef({TOAuth2.}ExtractParam(AAnswer, 'user_id'), 0);
+  FToken := ExtractParam(AAnswer, 'access_token');
+  FUserID := StrToIntDef(ExtractParam(AAnswer, 'user_id'), 0);
 
   Result := (FToken <> '') and (FUserID > 0);
   if Result then
@@ -448,7 +450,7 @@ begin
   end;
 end;
 
-function TVKService.AudioGet(OwnerID, AlbumID, Offset, Count: Integer): TVKAudios;
+function TVKService.AudioGet(OwnerID, Offset, Count: Integer): TVKAudios;
 var
   AParams: TVKParams;
 begin
@@ -459,8 +461,6 @@ begin
     AParams := TVKParams.Create;
     try
       AParams.Add('owner_id', OwnerID);
-      if AlbumID > 0 then
-        AParams.Add('album_id', AlbumID);
       AParams.Add('offset', Offset);
       AParams.Add('count', Min(Count, MaxAudioGetCount));
       Command('audio.get', AParams, Result.Load);
@@ -480,19 +480,28 @@ begin
   end;
 end;
 
-function TVKService.AudioGetAlbums(OwnerID, Offset: Integer; Count: Integer = 50): TVKAlbums;
+function TVKService.AudioGetFromPlaylist(OwnerID, PlaylistID, Offset, Count: Integer): TVKAudios;
 var
   AParams: TVKParams;
 begin
   CheckID(OwnerID);
-  Result := TVKAlbums.Create;
+
+  Result := TVKAudios.Create;
   try
     AParams := TVKParams.Create;
     try
       AParams.Add('owner_id', OwnerID);
+      AParams.Add('playlist_id', PlaylistID);
       AParams.Add('offset', Offset);
-      AParams.Add('count', Min(Count, MaxAlbumGetCount));
-      Command('audio.getAlbums', AParams, Result.Load);
+      AParams.Add('count', Min(Count, MaxAudioGetCount));
+      Command('audio.get', AParams, Result.Load);
+
+      // #AI: FIXME - workaround for strange beahvior of VK API:
+      // MaxCount = 211, but when we requested 6000 - VK returns 205 instead of 211.
+      if (Offset = 0) and (Count >= MaxAudioGetCount) then
+        Result.MaxCount := Result.Count
+      else
+        Result.MaxCount := Min(Result.MaxCount, MaxAudioGetCount);
     finally
       AParams.Free;
     end;
@@ -602,7 +611,7 @@ begin
       AParams.Add('lyrics_id', LyricsID);
       ADocument := Command('audio.getLyrics', AParams);
       try
-        if ADocument.FindNode(['response', 'lyrics', 'text'], ANode) then
+        if ADocument.FindNode(['response', 'text'], ANode) then
           Result := ANode.NodeValue;
       finally
         ADocument.Free;
@@ -719,6 +728,50 @@ begin
     Result := True;
   finally
     AParams.Free;
+  end;
+end;
+
+function TVKService.AudioGetPlaylists(const OwnerID: Integer; Offset: Integer; Count: Integer = 100): TVKPlaylists;
+var
+  AParams: TVKParams;
+begin
+  CheckID(OwnerID);
+  Result := TVKPlaylists.Create;
+  try
+    AParams := TVKParams.Create;
+    try
+      AParams.Add('owner_id', OwnerID);
+      AParams.Add('offset', Offset);
+      AParams.Add('count', Min(Count, MaxPlaylistGetCount));
+      Command('audio.getPlaylists', AParams, Result.Load);
+    finally
+      AParams.Free;
+    end;
+  except
+    FreeAndNil(Result);
+    raise;
+  end;
+end;
+
+function TVKService.AudioGetPlaylistByID(const OwnerID: Integer; const PlaylistID: Integer): TVKPlaylist;
+var
+  AParams: TVKParams;
+begin
+  CheckID(OwnerID);
+
+  Result := TVKPlaylist.Create;
+  try
+    AParams := TVKParams.Create;
+    try
+      AParams.Add('owner_id', OwnerID);
+      AParams.Add('playlist_id', PlaylistID);
+      Command('audio.getPlaylistById', AParams, Result.Load);
+    finally
+      AParams.Free;
+    end;
+  except
+    FreeAndNil(Result);
+    raise;
   end;
 end;
 

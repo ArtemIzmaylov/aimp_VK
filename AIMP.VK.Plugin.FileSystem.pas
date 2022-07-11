@@ -92,6 +92,14 @@ type
     procedure OnCheckURL(URL: IAIMPString; var Handled: LongBool); stdcall;
   end;
 
+  {TAIMPVKCustomAttributes = class(TInterfacedObject,IAIMPFileSystemCommandFileInfo)
+  protected
+    // IAIMPFileSystemCommandFileInfo
+    function GetFileAttrs(FileName: IAIMPString; out Attrs: TAIMPFileAttributes): HRESULT; stdcall;
+    function GetFileSize(FileName: IAIMPString; out Size: Int64): HRESULT; stdcall;
+    function IsFileExists(FileName: IAIMPString): HRESULT; stdcall;
+  end;}
+
   { TAIMPVKFileSystemCacheQueryBuilder }
 
   TAIMPVKFileSystemCacheQueryBuilder = class
@@ -488,6 +496,9 @@ begin
     PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_TITLE, AAudio.Title);
     PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_GENRE, AAudio.Genre);
     PropListSetFloat(AInfo, AIMP_FILEINFO_PROPID_DURATION, AAudio.Duration);
+    {PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_URL, AAudio.GetRealLink());
+    PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_ALBUM, 'VK Album Name');
+    PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_LYRICS , 'VK Lyrics Text');}
   finally
     AAudio.Free;
   end;

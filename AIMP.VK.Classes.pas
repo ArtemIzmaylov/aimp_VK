@@ -57,36 +57,7 @@ type
     procedure Save(AStream: TStream); overload;
   end;
 
-  { TVKAlbum }
 
-  TVKAlbum = class
-  protected
-    FId: Integer;
-    FOwnerId: Integer;
-    FTitle: UnicodeString;
-  public
-    constructor Create(ANode: TACLXMLNode); overload;
-    function GetOwnerAndAudioIDPair: string;
-    procedure Load(ANode: TACLXMLNode);
-    procedure Save(ANode: TACLXMLNode);
-    //
-    property Id: Integer read FId;
-    property OwnerId: Integer read FOwnerId;
-    property Title: UnicodeString read FTitle;
-  end;
-
-  { TVKAlbums }
-
-  TVKAlbums = class(TVKList<TVKAlbum>)
-  strict private
-    FMaxCount: Integer;
-  public
-    function Find(const OwnerID, AlbumID: Integer; out AAlbum: TVKAlbum): Boolean;
-    procedure Load(ANode: TACLXMLNode); override;
-    procedure Save(ANode: TACLXMLNode); override;
-    //
-    property MaxCount: Integer read FMaxCount write FMaxCount;
-  end;
 
   { TVKAudio }
 
@@ -102,6 +73,7 @@ type
     FOwnerID: Integer;
     FTitle: string;
     FURL: string;
+    FAccessKey: string;
 
     function GetGenre: string;
   public
@@ -111,6 +83,7 @@ type
     procedure Load(ANode: TACLXMLNode);
     procedure Save(ANode: TACLXMLNode);
     function GetOwnerAndAudioIDPair: string;
+    function GetRealLink: string;
     //
     property AlbumID: Integer read FAlbumID write FAlbumID;
     property Artist: string read FArtist write FArtist;
@@ -123,6 +96,7 @@ type
     property OwnerID: Integer read FOwnerID write FOwnerID;
     property Title: string read FTitle write FTitle;
     property URL: string read FURL write FURL;
+    property AccessKey: string read FAccessKey write FAccessKey;
   end;
 
   { TVKAudios }
@@ -131,6 +105,37 @@ type
   strict private
     FMaxCount: Integer;
   public
+    procedure Load(ANode: TACLXMLNode); override;
+    procedure Save(ANode: TACLXMLNode); override;
+    //
+    property MaxCount: Integer read FMaxCount write FMaxCount;
+  end;
+
+  { TVKPlaylist }
+
+  TVKPlaylist = class
+  protected
+    FId: Integer;
+    FOwnerId: Integer;
+    FTitle: UnicodeString;
+  public
+    constructor Create(ANode: TACLXMLNode); overload;
+    function GetOwnerAndAudioIDPair: string;
+    procedure Load(ANode: TACLXMLNode);
+    procedure Save(ANode: TACLXMLNode);
+    //
+    property Id: Integer read FId;
+    property OwnerId: Integer read FOwnerId;
+    property Title: UnicodeString read FTitle;
+  end;
+
+  { TVKPlaylists }
+
+  TVKPlaylists = class(TVKList<TVKPlaylist>)
+  strict private
+    FMaxCount: Integer;
+  public
+    function Find(const OwnerID, PlaylistID: Integer; out APlaylist: TVKPlaylist): Boolean;
     procedure Load(ANode: TACLXMLNode); override;
     procedure Save(ANode: TACLXMLNode); override;
     //
@@ -214,9 +219,7 @@ function ParseOwnerAndAudioIDPair(const S: string; var AOwnerID, ID: Integer): B
 implementation
 
 uses
-  ACL.Parsers,
-  ACL.Utils.Shell,
-  ACL.Utils.Strings;
+  ACL.Utils.Shell, ACL.Utils.Strings, ACL.Parsers;
 
 var
   FVKGenres: TVKGenres;
@@ -322,75 +325,6 @@ begin
     Result := E_NOINTERFACE;
 end;
 
-{ TVKAlbum }
-
-constructor TVKAlbum.Create(ANode: TACLXMLNode);
-begin
-  Load(ANode);
-end;
-
-function TVKAlbum.GetOwnerAndAudioIDPair: string;
-begin
-  Result := Format('%d_%d', [OwnerID, ID]);
-end;
-
-procedure TVKAlbum.Load(ANode: TACLXMLNode);
-begin
-  FId := ANode.NodeValueByNameAsInteger('id');
-  FOwnerId := ANode.NodeValueByNameAsInteger('owner_id');
-  FTitle := ANode.NodeValueByName('title');
-end;
-
-procedure TVKAlbum.Save(ANode: TACLXMLNode);
-begin
-  ANode.Add('id').NodeValueAsInteger := ID;
-  ANode.Add('owner_id').NodeValueAsInteger := OwnerId;
-  ANode.Add('title').NodeValue := Title;
-end;
-
-{ TVKAlbums }
-
-function TVKAlbums.Find(const OwnerID, AlbumID: Integer; out AAlbum: TVKAlbum): Boolean;
-var
-  I: Integer;
-begin
-  Result := False;
-  for I := 0 to Count - 1 do
-    if (List[I].Id = AlbumID) and (List[I].OwnerId = OwnerID) then
-    begin
-      AAlbum := List[I];
-      Exit(True);
-    end;
-end;
-
-procedure TVKAlbums.Load(ANode: TACLXMLNode);
-begin
-  if ANode <> nil then
-  begin
-    FMaxCount := ANode.NodeValueByNameAsInteger('count');
-    ANode.Enum(['items'],
-      procedure (ANode: TACLXMLNode)
-      var
-        AItem: TVKAlbum;
-      begin
-        AItem := TVKAlbum.Create;
-        AItem.FId := ANode.NodeValueByNameAsInteger('id');
-        AItem.FOwnerId := ANode.NodeValueByNameAsInteger('owner_id');
-        AItem.FTitle := ANode.NodeValueByName('title');
-        Add(AItem);
-      end);
-  end;
-end;
-
-procedure TVKAlbums.Save(ANode: TACLXMLNode);
-var
-  I: Integer;
-begin
-  ANode.Add('count').NodeValueAsInteger := FMaxCount;
-  ANode := ANode.Add('items');
-  for I := 0 to Count - 1 do
-    List[I].Save(ANode.Add('item'));
-end;
 
 { TVKAudio }
 
@@ -411,6 +345,7 @@ begin
   FOwnerID := ASource.OwnerID;
   FTitle := ASource.Title;
   FDate := ASource.Date;
+  FAccessKey := ASource.AccessKey;
 end;
 
 function TVKAudio.Clone: TVKAudio;
@@ -420,10 +355,17 @@ begin
 end;
 
 procedure TVKAudio.Load(ANode: TACLXMLNode);
+var
+  ASubNode: TACLXMLNode;
 begin
   FID := ANode.NodeValueByNameAsInteger('id');
   FArtist := ANode.NodeValueByName('artist');
-  FAlbumID := ANode.NodeValueByNameAsInteger('album_id');
+
+  if ANode.FindNode('album', ASubNode) then
+  begin
+    FAlbumID := ASubNode.NodeValueByNameAsInteger('id');
+  end;
+
   FDuration := ANode.NodeValueByNameAsInteger('duration');
   FGenreID := ANode.NodeValueByNameAsInteger('genre_id');
   FLyricsID := ANode.NodeValueByNameAsInteger('lyrics_id');
@@ -431,6 +373,7 @@ begin
   FTitle := ANode.NodeValueByName('title');
   FDate := StrToInt64Def(ANode.NodeValueByName('date'), 0);
   FURL := ANode.NodeValueByName('url');
+  FAccessKey := ANode.NodeValueByName('access_key');
 end;
 
 procedure TVKAudio.Save(ANode: TACLXMLNode);
@@ -439,12 +382,13 @@ begin
   ANode.Add('artist').NodeValue := FArtist;
   ANode.Add('duration').NodeValueAsInteger := FDuration;
   ANode.Add('genre_id').NodeValueAsInteger := FGenreID;
-  ANode.Add('album_id').NodeValueAsInteger := FAlbumID;
+  ANode.Add('album').Add('id').NodeValueAsInteger := FAlbumID;
   ANode.Add('lyrics_id').NodeValueAsInteger := FLyricsID;
   ANode.Add('owner_id').NodeValueAsInteger := FOwnerID;
   ANode.Add('title').NodeValue := FTitle;
   ANode.Add('date').NodeValue := IntToStr(FDate);
   ANode.Add('url').NodeValue := FURL;
+  ANode.Add('access_key').NodeValue := FAccessKey;
 end;
 
 function TVKAudio.GetGenre: string;
@@ -455,6 +399,11 @@ end;
 function TVKAudio.GetOwnerAndAudioIDPair: string;
 begin
   Result := Format('%d_%d', [OwnerID, ID]);
+end;
+
+function TVKAudio.GetRealLink: string;
+begin
+  Result := Format('https://vk.com/audio%d_%d_%s', [OwnerID, ID, AccessKey]);
 end;
 
 { TVKAudios }
@@ -486,6 +435,76 @@ begin
   ANode := ANode.Add('items');
   for I := 0 to Count - 1 do
     List[I].Save(ANode.Add('audio'));
+end;
+
+{ TVKPlaylist }
+
+constructor TVKPlaylist.Create(ANode: TACLXMLNode);
+begin
+  Load(ANode);
+end;
+
+function TVKPlaylist.GetOwnerAndAudioIDPair: string;
+begin
+  Result := Format('%d_%d', [OwnerID, ID]);
+end;
+
+procedure TVKPlaylist.Load(ANode: TACLXMLNode);
+begin
+  FId := ANode.NodeValueByNameAsInteger('id');
+  FOwnerId := ANode.NodeValueByNameAsInteger('owner_id');
+  FTitle := ANode.NodeValueByName('title');
+end;
+
+procedure TVKPlaylist.Save(ANode: TACLXMLNode);
+begin
+  ANode.Add('id').NodeValueAsInteger := ID;
+  ANode.Add('owner_id').NodeValueAsInteger := OwnerId;
+  ANode.Add('title').NodeValue := Title;
+end;
+
+{ TVKPlaylists }
+
+function TVKPlaylists.Find(const OwnerID, PlaylistID: Integer; out APlaylist: TVKPlaylist): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  for I := 0 to Count - 1 do
+    if (List[I].Id = PlaylistID) and (List[I].OwnerId = OwnerID) then
+    begin
+      APlaylist := List[I];
+      Exit(True);
+    end;
+end;
+
+procedure TVKPlaylists.Load(ANode: TACLXMLNode);
+begin
+  if ANode <> nil then
+  begin
+    FMaxCount := ANode.NodeValueByNameAsInteger('count');
+    ANode.Enum(['items'],
+      procedure (ANode: TACLXMLNode)
+      var
+        AItem: TVKPlaylist;
+      begin
+        AItem := TVKPlaylist.Create;
+        AItem.FId := ANode.NodeValueByNameAsInteger('id');
+        AItem.FOwnerId := ANode.NodeValueByNameAsInteger('owner_id');
+        AItem.FTitle := ANode.NodeValueByName('title');
+        Add(AItem);
+      end);
+  end;
+end;
+
+procedure TVKPlaylists.Save(ANode: TACLXMLNode);
+var
+  I: Integer;
+begin
+  ANode.Add('count').NodeValueAsInteger := FMaxCount;
+  ANode := ANode.Add('items');
+  for I := 0 to Count - 1 do
+    List[I].Save(ANode.Add('item'));
 end;
 
 { TVKFriend }
