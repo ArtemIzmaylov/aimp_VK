@@ -49,7 +49,7 @@ uses
   ACL.UI.Dialogs.FolderBrowser,
   ACL.UI.ImageList,
   ACL.Utils.RTTI,
-  ACL.Utils.Shell;
+  ACL.Utils.Shell, ACL.UI.Controls.Panel;
 
 type
 
@@ -79,6 +79,7 @@ type
     ilImages: TACLImageList;
     L1: TACLLabel;
     L2: TACLLabel;
+    ACLPanel1: TACLPanel;
 
     procedure B1Click(Sender: TObject);
     procedure B2Click(Sender: TObject);

@@ -1,6 +1,7 @@
 object frmVKSettings: TfrmVKSettings
   Left = 0
   Top = 0
+  AlphaBlendValue = 0
   BorderStyle = bsNone
   ClientHeight = 500
   ClientWidth = 434
@@ -49,133 +50,144 @@ object frmVKSettings: TfrmVKSettings
     00FF000000FF000000FF000000FF000000FF000000FF000000FF000000FF0000
     0000000000000000000000000000000000000000000000000000000000000000
     000000000000000000000000000000000000000000000000000000000000}
-  Scaled = False
   TextHeight = 13
-  object GB1: TACLGroupBox
-    AlignWithMargins = True
+  object ACLPanel1: TACLPanel
     Left = 0
-    Top = 3
+    Top = 0
     Width = 434
-    Height = 54
-    Margins.Bottom = 0
-    Margins.Left = 0
-    Margins.Right = 0
-    Align = alTop
+    Height = 500
+    Align = alClient
+    ParentShowHint = False
+    ShowHint = False
     TabOrder = 0
-    Caption = '1'
-    object L1: TACLLabel
+    Borders = []
+    ExplicitHeight = 274
+    object GB1: TACLGroupBox
       AlignWithMargins = True
-      Left = 10
-      Top = 17
-      Width = 162
-      Height = 27
-      Align = alClient
-      Caption = 'L1'
-      ExplicitLeft = 13
-      ExplicitTop = 21
-      ExplicitWidth = 207
-      ExplicitHeight = 37
+      Left = 0
+      Top = 54
+      Width = 434
+      Height = 54
+      Margins.Bottom = 0
+      Margins.Left = 0
+      Margins.Right = 0
+      Align = alTop
+      TabOrder = 0
+      Caption = '1'
+      ExplicitTop = 3
+      object L1: TACLLabel
+        AlignWithMargins = True
+        Left = 10
+        Top = 17
+        Width = 162
+        Height = 27
+        Align = alClient
+        Caption = 'L1'
+        ExplicitWidth = 158
+      end
+      object B1: TACLButton
+        AlignWithMargins = True
+        Left = 304
+        Top = 17
+        Width = 120
+        Height = 27
+        Align = alRight
+        TabOrder = 1
+        OnClick = B1Click
+        Caption = 'B1'
+        ExplicitLeft = 300
+      end
+      object B2: TACLButton
+        AlignWithMargins = True
+        Left = 178
+        Top = 17
+        Width = 120
+        Height = 27
+        Align = alRight
+        TabOrder = 0
+        OnClick = B2Click
+        Caption = 'B2'
+        ExplicitLeft = 174
+      end
     end
-    object B1: TACLButton
+    object GB2: TACLGroupBox
       AlignWithMargins = True
-      Left = 304
-      Top = 17
-      Width = 120
-      Height = 27
-      Align = alRight
+      Left = 0
+      Top = 111
+      Width = 434
+      Height = 115
+      Margins.Bottom = 0
+      Margins.Left = 0
+      Margins.Right = 0
+      Align = alTop
       TabOrder = 1
-      OnClick = B1Click
-      Caption = 'B1'
+      Caption = '1'
+      CheckBox.Action = cbaToggleChildrenEnableState
+      CheckBox.Visible = True
+      OnCheckBoxStateChanged = ModifiedHandler
+      ExplicitTop = 54
+      object L2: TACLLabel
+        AlignWithMargins = True
+        Left = 29
+        Top = 38
+        Width = 395
+        Height = 67
+        Margins.Left = 22
+        Align = alClient
+        AlignmentVert = taAlignTop
+        Style.WordWrap = True
+        Caption = 'L1'
+        ExplicitWidth = 391
+      end
+      object CB1: TACLCheckBox
+        AlignWithMargins = True
+        Left = 10
+        Top = 17
+        Width = 414
+        Height = 15
+        Align = alTop
+        TabOrder = 0
+        OnClick = ModifiedHandler
+        Caption = 'CB1'
+        ExplicitWidth = 410
+      end
     end
-    object B2: TACLButton
+    object GB3: TACLGroupBox
       AlignWithMargins = True
-      Left = 178
-      Top = 17
-      Width = 120
-      Height = 27
-      Align = alRight
-      TabOrder = 0
-      OnClick = B2Click
-      Caption = 'B2'
-    end
-  end
-  object GB3: TACLGroupBox
-    AlignWithMargins = True
-    Left = 0
-    Top = 60
-    Width = 434
-    Height = 48
-    Margins.Bottom = 0
-    Margins.Left = 0
-    Margins.Right = 0
-    Align = alTop
-    TabOrder = 1
-    AutoSize = True
-    Caption = '1'
-    OnCheckBoxStateChanged = ModifiedHandler
-    object edDownloadPath: TACLEdit
-      AlignWithMargins = True
-      Left = 10
-      Top = 17
-      Width = 414
-      Height = 21
+      Left = 0
+      Top = 3
+      Width = 434
+      Height = 48
+      Margins.Bottom = 0
+      Margins.Left = 0
+      Margins.Right = 0
       Align = alTop
-      TabOrder = 0
-      OnChange = ModifiedHandler
-      Buttons = <
-        item
-          Caption = '...'
-          OnClick = edDownloadPathButtons0Click
-        end
-        item
-          ImageIndex = 0
-          OnClick = edDownloadPathButtons1Click
-        end>
-      ButtonsImages = ilImages
-      Text = ''
-    end
-  end
-  object GB2: TACLGroupBox
-    AlignWithMargins = True
-    Left = 0
-    Top = 111
-    Width = 434
-    Height = 115
-    Margins.Bottom = 0
-    Margins.Left = 0
-    Margins.Right = 0
-    Align = alTop
-    TabOrder = 2
-    Caption = '1'
-    CheckBox.Action = cbaToggleChildrenEnableState
-    CheckBox.Visible = True
-    OnCheckBoxStateChanged = ModifiedHandler
-    object L2: TACLLabel
-      AlignWithMargins = True
-      Left = 29
-      Top = 38
-      Width = 395
-      Height = 67
-      Margins.Left = 22
-      Align = alClient
-      AlignmentVert = taAlignTop
-      Style.WordWrap = True
-      Caption = 'L1'
-      ExplicitLeft = 36
-      ExplicitTop = 48
-      ExplicitWidth = 487
-      ExplicitHeight = 55
-    end
-    object CB1: TACLCheckBox
-      AlignWithMargins = True
-      Left = 10
-      Top = 17
-      Width = 414
-      Height = 15
-      Align = alTop
-      TabOrder = 0
-      OnClick = ModifiedHandler
-      Caption = 'CB1'
+      TabOrder = 2
+      AutoSize = True
+      Caption = '1'
+      OnCheckBoxStateChanged = ModifiedHandler
+      object edDownloadPath: TACLEdit
+        AlignWithMargins = True
+        Left = 10
+        Top = 17
+        Width = 414
+        Height = 21
+        Align = alTop
+        TabOrder = 0
+        OnChange = ModifiedHandler
+        Buttons = <
+          item
+            Caption = '...'
+            OnClick = edDownloadPathButtons0Click
+          end
+          item
+            ImageIndex = 0
+            OnClick = edDownloadPathButtons1Click
+          end>
+        ButtonsImages = ilImages
+        Text = ''
+        ExplicitWidth = 410
+      end
     end
   end
   object ilImages: TACLImageList
