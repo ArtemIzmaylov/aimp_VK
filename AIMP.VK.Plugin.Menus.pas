@@ -507,6 +507,7 @@ var
   AAlbumID: Integer;
   AAudioID: Integer;
   AOwnerID: Integer;
+  AAccessKey: string;
   ATitle: string;
   ATracksToAdd: TList<TPair<Integer, Integer>>;
   ATracksToMove: TList<Integer>;
@@ -527,7 +528,7 @@ begin
       AUserID := Owner.Service.UserID;
       for I := 0 to AFiles.Count - 1 do
       begin
-        if ParseOwnerAndAudioIDPair(TAIMPVKFileSystem.GetOwnerAndAudioIDPair(AFiles[I]), AOwnerID, AAudioID) then
+        if ParseOwnerAndAudioIDPair(TAIMPVKFileSystem.GetOwnerAndAudioIDPair(AFiles[I]), AOwnerID, AAudioID, AAccessKey) then
         begin
           if AOwnerID = AUserID then
             ATracksToMove.Add(AAudioID)
@@ -636,9 +637,10 @@ end;
 function TAIMPVKMenuItemDelete.GetStateCore(const AFiles: TACLStringList): TAIMPVKItemState;
 var
   AOwnerID, ID: Integer;
+  AccessKey: string;
 begin
   Result := [];
-  if ParseOwnerAndAudioIDPair(TAIMPVKFileSystem.GetOwnerAndAudioIDPair(AFiles.First), AOwnerID, ID) then
+  if ParseOwnerAndAudioIDPair(TAIMPVKFileSystem.GetOwnerAndAudioIDPair(AFiles.First), AOwnerID, ID, AccessKey) then
   begin
     if AOwnerID = Owner.Service.UserID then
       Result := [isEnabled, isVisible]
@@ -651,6 +653,7 @@ procedure TAIMPVKMenuItemDelete.OnExecuteCore(const AFiles: TACLStringList);
 var
   AAudioID: Integer;
   AOwnerID: Integer;
+  AAccessKey: string;
   AUserID: Integer;
   I: Integer;
 begin
@@ -659,7 +662,7 @@ begin
     AUserID := Owner.Service.UserID;
     for I := 0 to AFiles.Count - 1 do
     begin
-      if ParseOwnerAndAudioIDPair(TAIMPVKFileSystem.GetOwnerAndAudioIDPair(AFiles[I]), AOwnerID, AAudioID) then
+      if ParseOwnerAndAudioIDPair(TAIMPVKFileSystem.GetOwnerAndAudioIDPair(AFiles[I]), AOwnerID, AAudioID, AAccessKey) then
       begin
         if AOwnerID = AUserID then
           Owner.Service.AudioDelete(AOwnerID, AAudioID);

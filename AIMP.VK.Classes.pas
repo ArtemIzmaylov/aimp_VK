@@ -215,7 +215,7 @@ type
   end;
 
 function VKGenres: TVKGenres;
-function ParseOwnerAndAudioIDPair(const S: string; var AOwnerID, ID: Integer): Boolean;
+function ParseOwnerAndAudioIDPair(const S: string; out AOwnerID, ID: Integer; out AccessKey: string): Boolean;
 implementation
 
 uses
@@ -254,16 +254,26 @@ begin
   Result := FVKGenres;
 end;
 
-function ParseOwnerAndAudioIDPair(const S: string; var AOwnerID, ID: Integer): Boolean;
-var
-  APos: Integer;
+function Split(Str: string; Delimiter: Char): TStrings;
 begin
-  APos := acPos('_', S);
-  Result := APos > 0;
+  Result := TStringList.Create;
+  Result.Delimiter := Delimiter;
+  Result.StrictDelimiter := True;
+  Result.DelimitedText := Str;
+end;
+
+function ParseOwnerAndAudioIDPair(const S: string; out AOwnerID, ID: Integer; out AccessKey: String): Boolean;
+var
+  Parts: TStrings;
+begin
+  Parts := Split(S, '_');
+  Result := Parts.Count > 0;
   if Result then
   begin
-    AOwnerID := StrToIntDef(Copy(S, 1, APos - 1), 0);
-    ID := StrToIntDef(Copy(S, APos + 1, MaxInt), 0);
+    AOwnerID := StrToIntDef(Parts[0], 0);
+    ID := StrToIntDef(Parts[1], 0);
+    if Parts.Count >= 3 then
+      AccessKey := Parts[2];
     Result := (AOwnerID <> 0) and (ID <> 0);
   end;
 end;

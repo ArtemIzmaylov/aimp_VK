@@ -1346,8 +1346,9 @@ end;
 function TAIMPVKDataProviderTable.GetAudiosFromAlbum(const AOwnerAndAlbumIDPair: string): TVKAudios;
 var
   AOwnerID, AAlbumID: Integer;
+  AAccessKey: string;
 begin
-  if not ParseOwnerAndAudioIDPair(AOwnerAndAlbumIDPair, AOwnerID, AAlbumID) or (AOwnerID = 0) or (AAlbumID = 0) then
+  if not ParseOwnerAndAudioIDPair(AOwnerAndAlbumIDPair, AOwnerID, AAlbumID, AAccessKey) or (AOwnerID = 0) or (AAlbumID = 0) then
     raise EAIMPVKDataStorageError.Create(LangLoadString('AIMPVKPlugin\NoData'));
   Result := GetAudiosFromID(AOwnerID, AAlbumID);
 end;
@@ -1430,8 +1431,9 @@ end;
 function TAIMPVKDataProviderTable.GetAudiosFromWall(const AOwnerAndPostIDPair: string): TVKAudios;
 var
   AOwnerID, APostID: Integer;
+  AAccessKey: string;
 begin
-  if ParseOwnerAndAudioIDPair(AOwnerAndPostIDPair, AOwnerID, APostID) then
+  if ParseOwnerAndAudioIDPair(AOwnerAndPostIDPair, AOwnerID, APostID, AAccessKey) then
   begin
     Result := CachedRequest('WallPost-' + AOwnerAndPostIDPair,
       function: TVKAudios
