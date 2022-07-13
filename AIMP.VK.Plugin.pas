@@ -173,7 +173,7 @@ procedure TAIMPVKPlugin.RegisterMenus;
   begin
     TAIMPVKMenuItemDownload.Register(Self, ADataSource, AMenuIDBase + '.Download', AParentId);
     TAIMPVKMenuItemFindLyrics.Register(Self, ADataSource, AMenuIDBase + '.FindLyrics', AParentId);
-    TAIMPVKMenuItemAddToAlbum.Register(Self, ADataSource, AMenuIDBase + '.AddToAlbum', AParentId);
+    TAIMPVKMenuItemAddToPlaylist.Register(Self, ADataSource, AMenuIDBase + '.AddToPlaylist', AParentId);
     TAIMPVKMenuItemAddToMyMusic.Register(Self, ADataSource, AMenuIDBase + '.AddToMyMusic', AParentId);
     AddSimpleMenuItem(AParentId, '-', nil);
   end;

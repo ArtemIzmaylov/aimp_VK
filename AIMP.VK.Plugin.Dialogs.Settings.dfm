@@ -61,7 +61,6 @@ object frmVKSettings: TfrmVKSettings
     ShowHint = False
     TabOrder = 0
     Borders = []
-    ExplicitHeight = 274
     object GB1: TACLGroupBox
       AlignWithMargins = True
       Left = 0
@@ -74,7 +73,6 @@ object frmVKSettings: TfrmVKSettings
       Align = alTop
       TabOrder = 0
       Caption = '1'
-      ExplicitTop = 3
       object L1: TACLLabel
         AlignWithMargins = True
         Left = 10
@@ -83,7 +81,6 @@ object frmVKSettings: TfrmVKSettings
         Height = 27
         Align = alClient
         Caption = 'L1'
-        ExplicitWidth = 158
       end
       object B1: TACLButton
         AlignWithMargins = True
@@ -95,7 +92,6 @@ object frmVKSettings: TfrmVKSettings
         TabOrder = 1
         OnClick = B1Click
         Caption = 'B1'
-        ExplicitLeft = 300
       end
       object B2: TACLButton
         AlignWithMargins = True
@@ -107,7 +103,6 @@ object frmVKSettings: TfrmVKSettings
         TabOrder = 0
         OnClick = B2Click
         Caption = 'B2'
-        ExplicitLeft = 174
       end
     end
     object GB2: TACLGroupBox
@@ -125,7 +120,6 @@ object frmVKSettings: TfrmVKSettings
       CheckBox.Action = cbaToggleChildrenEnableState
       CheckBox.Visible = True
       OnCheckBoxStateChanged = ModifiedHandler
-      ExplicitTop = 54
       object L2: TACLLabel
         AlignWithMargins = True
         Left = 29
@@ -137,7 +131,6 @@ object frmVKSettings: TfrmVKSettings
         AlignmentVert = taAlignTop
         Style.WordWrap = True
         Caption = 'L1'
-        ExplicitWidth = 391
       end
       object CB1: TACLCheckBox
         AlignWithMargins = True
@@ -149,7 +142,6 @@ object frmVKSettings: TfrmVKSettings
         TabOrder = 0
         OnClick = ModifiedHandler
         Caption = 'CB1'
-        ExplicitWidth = 410
       end
     end
     object GB3: TACLGroupBox
@@ -186,7 +178,35 @@ object frmVKSettings: TfrmVKSettings
           end>
         ButtonsImages = ilImages
         Text = ''
-        ExplicitWidth = 410
+      end
+    end
+    object GB_ClearCache: TACLGroupBox
+      Left = 0
+      Top = 450
+      Width = 434
+      Height = 50
+      Align = alBottom
+      TabOrder = 3
+      Caption = 'ClearCache'
+      object Label_ClearCache: TACLLabel
+        Left = 7
+        Top = 14
+        Width = 300
+        Height = 29
+        Align = alClient
+        AlignmentVert = taAlignTop
+        Style.WordWrap = True
+        Caption = 'ClearCache'
+      end
+      object Button_ClearCache: TACLButton
+        Left = 307
+        Top = 14
+        Width = 120
+        Height = 29
+        Align = alRight
+        TabOrder = 0
+        OnClick = Button_ClearCacheClick
+        Caption = 'Clear Cache'
       end
     end
   end

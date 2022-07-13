@@ -150,9 +150,9 @@ type
 // MenuItems
 //----------------------------------------------------------------------------------------------------------------------
 
-  { TAIMPVKMenuItemAddToAlbum }
+  { TAIMPVKMenuItemAddToPlaylist }
 
-  TAIMPVKMenuItemAddToAlbum = class(TAIMPVKCustomFilesBasedMenuItem)
+  TAIMPVKMenuItemAddToPlaylist = class(TAIMPVKCustomFilesBasedMenuItem)
   protected
     procedure UpdateState(AMenuItem: IAIMPMenuItem); override;
   end;
@@ -477,14 +477,14 @@ end;
 // MenuItems
 //----------------------------------------------------------------------------------------------------------------------
 
-{ TAIMPVKMenuItemAddToAlbum }
+{ TAIMPVKMenuItemAddToPlaylist }
 
-procedure TAIMPVKMenuItemAddToAlbum.UpdateState(AMenuItem: IAIMPMenuItem);
+procedure TAIMPVKMenuItemAddToPlaylist.UpdateState(AMenuItem: IAIMPMenuItem);
 begin
   inherited UpdateState(AMenuItem);
   AMenuItem.DeleteChildren;
 
-  AddSimpleMenuItem(AMenuItem, LangLoadString('AIMPVKPlugin\NewAlbum'), TAIMPVKMenuItemAddToMyMusic.Create(Owner, DataSource, -1));
+  AddSimpleMenuItem(AMenuItem, LangLoadString('AIMPVKPlugin\NewPlaylist'), TAIMPVKMenuItemAddToMyMusic.Create(Owner, DataSource, -1));
   AddSimpleMenuItem(AMenuItem, '-', nil);
   Owner.DataStorage.EnumMyPlaylists(
     procedure (APlaylist: TVKPlaylist)
@@ -517,7 +517,7 @@ begin
   AAlbumID := FAlbumID;
   if AAlbumID < 0 then
   begin
-    if TACLInputQueryDialog.Execute(LangLoadString('AIMPVKPlugin\NewAlbum'), LangLoadString('MSG\2'), ATitle, nil, NameValidationProc) then
+    if TACLInputQueryDialog.Execute(LangLoadString('AIMPVKPlugin\NewPlaylist'), LangLoadString('MSG\2'), ATitle, nil, NameValidationProc) then
       AAlbumID := Owner.Service.AudioCreatePlaylist(ATitle);
   end;
   if AAlbumID >= 0 then
@@ -655,11 +655,16 @@ var
   AOwnerID: Integer;
   AAccessKey: string;
   AUserID: Integer;
+  //APlaylist: Integer;
   I: Integer;
+  //AService: IAIMPServicePlaylistManager;
 begin
   if acMessageBox(MainWindowGetHandle, LangLoadString('AIMPVKPlugin\Q1'), VKName, MB_ICONQUESTION or MB_YESNOCANCEL) = ID_YES then
   begin
     AUserID := Owner.Service.UserID;
+    {if (CoreGetService(IAIMPServicePlaylistManager, AService)) then
+      AService.GetActivePlaylist(APlaylist);
+    TAIMPVKDataProviderGroupingTreeSelection.GetActiveCategory;}
     for I := 0 to AFiles.Count - 1 do
     begin
       if ParseOwnerAndAudioIDPair(TAIMPVKFileSystem.GetOwnerAndAudioIDPair(AFiles[I]), AOwnerID, AAudioID, AAccessKey) then

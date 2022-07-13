@@ -213,7 +213,7 @@ end;
 
 class function TAIMPVKSmartPlaylistsFactory.CanCreate(ACategory: TAIMPVKCategory; const AData: UnicodeString): Boolean;
 begin
-  Result := (ACategory in [TAIMPVKCategory.Music, TAIMPVKCategory.MusicFromAlbum, TAIMPVKCategory.MusicFromWall]) and (AData <> '');
+  Result := (ACategory in [TAIMPVKCategory.Music, TAIMPVKCategory.MusicFromPlaylist, TAIMPVKCategory.MusicFromWall]) and (AData <> '');
 end;
 
 class function TAIMPVKSmartPlaylistsFactory.New(ACategory: TAIMPVKCategory; const AData: UnicodeString): IAIMPPlaylistPreimage;

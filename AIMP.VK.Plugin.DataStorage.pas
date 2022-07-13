@@ -54,7 +54,7 @@ const
 
 type
   TAIMPVKDataStorageCache = class;
-  TAIMPVKCategory = (Unknown, Music, MusicFromAlbum, MusicFromWall, MyFriends, MyGroups,
+  TAIMPVKCategory = (Unknown, Music, MusicFromPlaylist, MusicFromWall, MyFriends, MyGroups,
     Recommended, Popular, Search, SearchByUser, SearchByGroup, MyFaves, MyFavePeople, MyFavePosts, MyNewsFeed);
 
   { EAIMPVKDataStorageError }
@@ -407,7 +407,7 @@ end;
 function GetCategoryName(ACategory: TAIMPVKCategory): UnicodeString;
 const
   Map: array[TAIMPVKCategory] of UnicodeString = ('',
-    'Music', 'MusicFromAlbum', 'Wall', 'MyFriends', 'MyGroups',
+    'Music', 'MusicFromPlaylist', 'Wall', 'MyFriends', 'MyGroups',
     'MyRecommendations', 'Popular', 'Search', 'SearchByUserID',
     'SearchByGroupID', 'MyFaves', 'MyFavePeople', 'MyFavePosts',
     'MyNewsFeed'
@@ -674,16 +674,19 @@ end;
 procedure TAIMPVKDataStorageCache.Flush;
 begin
   FDB.Exec(TAIMPVKDataStorageCacheQueryBuilder.DeleteAll);
+  FDB.Compress;
 end;
 
 procedure TAIMPVKDataStorageCache.Flush(const AQuery: string; AOperator: TOperator);
 begin
   FDB.Exec(TAIMPVKDataStorageCacheQueryBuilder.Delete(AQuery, AOperator));
+  FDB.Compress;
 end;
 
 procedure TAIMPVKDataStorageCache.Flush(const AFormatString: string; const AArgs: array of const; AOperator: TOperator);
 begin
   Flush(Format(AFormatString, AArgs), AOperator);
+  FDB.Compress;
 end;
 
 function TAIMPVKDataStorageCache.Load(const AQuery: string; AList: IVKListIO): Boolean;
@@ -1119,7 +1122,7 @@ begin
     for I := 0 to APlaylists.Count - 1 do
     begin
       APlaylist := APlaylists.List[I];
-      AList.Add(TAIMPVKCategory.MusicFromAlbum, False, APlaylist.GetOwnerAndAudioIDPair, APlaylist.Title, AIMPML_FIELDIMAGE_DISK);
+      AList.Add(TAIMPVKCategory.MusicFromPlaylist, False, APlaylist.GetOwnerAndAudioIDPair, APlaylist.Title, AIMPML_FIELDIMAGE_DISK);
     end;
   finally
     APlaylists.Free;
@@ -1146,7 +1149,7 @@ begin
   FStorage.EnumSystemPlaylists(
     procedure (APlaylist: TVKPlaylist)
     begin
-      AList.Add(TAIMPVKCategory.MusicFromAlbum, False, APlaylist.GetOwnerAndAudioIDPair, APlaylist.Title);
+      AList.Add(TAIMPVKCategory.MusicFromPlaylist, False, APlaylist.GetOwnerAndAudioIDPair, APlaylist.Title);
     end
   );
 end;
@@ -1319,7 +1322,7 @@ begin
         Result := GetAudiosFromNews;
       TAIMPVKCategory.Music:
         Result := GetAudiosFromID(StrToIntDef(AData, 0));
-      TAIMPVKCategory.MusicFromAlbum:
+      TAIMPVKCategory.MusicFromPlaylist:
         Result := GetAudiosFromAlbum(AData);
       TAIMPVKCategory.MyFavePosts:
         Result := GetAudiosFromFavePosts;

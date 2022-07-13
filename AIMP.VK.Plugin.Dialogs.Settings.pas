@@ -34,6 +34,7 @@ uses
   AIMP.VK.Core,
   AIMP.VK.Plugin,
   AIMP.VK.Plugin.FileSystem,
+  AIMP.VK.Plugin.DataStorage,
   // API
   apiWrappersUI,
   apiOptions,
@@ -80,12 +81,14 @@ type
     L1: TACLLabel;
     L2: TACLLabel;
     ACLPanel1: TACLPanel;
+    Button_ClearCache: TACLButton;
 
     procedure B1Click(Sender: TObject);
     procedure B2Click(Sender: TObject);
     procedure edDownloadPathButtons0Click(Sender: TObject);
     procedure edDownloadPathButtons1Click(Sender: TObject);
     procedure ModifiedHandler(Sender: TObject);
+    procedure Button_ClearCacheClick(Sender: TObject);
   strict private
     FOwner: TAIMPVKPlugin;
   protected
@@ -202,6 +205,12 @@ procedure TfrmVKSettings.B2Click(Sender: TObject);
 begin
   Owner.Service.Logout;
   UpdateAuthInfo;
+end;
+
+procedure TfrmVKSettings.Button_ClearCacheClick(Sender: TObject);
+begin
+  TAIMPVKFileSystem.ClearTables;
+  Button_ClearCache.Enabled := false;
 end;
 
 procedure TfrmVKSettings.edDownloadPathButtons0Click(Sender: TObject);

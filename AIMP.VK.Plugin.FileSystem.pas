@@ -162,6 +162,7 @@ type
     class procedure FlushLinksCache;
     class procedure UpdateCache(AItem: TVKAudio); overload;
     class procedure UpdateCache(AItems: TVKAudios); overload;
+    class procedure ClearTables;
   end;
 
 function GetSearchQuery(const AInfo: IAIMPFileInfo): string;
@@ -631,6 +632,19 @@ begin
     end;
   end;
 end;
+
+class procedure TAIMPVKFileSystem.ClearTables;
+begin
+  FCacheLock.Enter;
+  try
+    if FCache <> nil then
+      FCache.Exec('DELETE FROM ' + PrepareData(TAIMPVKFileSystemCacheQueryBuilder.sTableAudios) + ';');
+      FCache.Compress;
+  finally
+    FCacheLock.Leave;
+  end;
+end;
+
 
 class function TAIMPVKFileSystem.GetInfoCore(const AFileURI: string; out AAudio: TVKAudio; ACheckActuality: Boolean): Boolean;
 var
