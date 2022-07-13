@@ -132,6 +132,7 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
+        <DCCReference Include="AIMP.VK.Classes.pas"/>
         <DCCReference Include="AIMP.VK.Core.pas"/>
         <DCCReference Include="AIMP.VK.Plugin.pas"/>
         <DCCReference Include="AIMP.VK.Plugin.DataStorage.pas"/>
@@ -146,7 +147,9 @@
         <DCCReference Include="AIMP.VK.Plugin.Dialogs.Lyrics.pas">
             <Form>frmVKLyrics</Form>
         </DCCReference>
-        <DCCReference Include="AIMP.VK.Plugin.Dialogs.Settings.pas"/>
+        <DCCReference Include="AIMP.VK.Plugin.Dialogs.Settings.pas">
+            <Form>frmVKSettings</Form>
+        </DCCReference>
         <DCCReference Include="AIMP.VK.Plugin.SmartPlaylists.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
