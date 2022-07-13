@@ -115,6 +115,7 @@ type
     sFieldLinkBirthday = 'LinkBirthday';
     sFieldLyricsID = 'LyricsID';
     sFieldOwnerID = 'OwnerID';
+    sFieldAccessKey = 'AccessKey';
     sFieldTitle = 'Title';
     sTableAudios = 'VKAudios';
   public
@@ -142,6 +143,7 @@ type
 
     class procedure Finalize;
     class procedure Initialize(AService: TVKService; ADataBase: TACLSQLiteBase);
+    class procedure VersionMigration;
 
     // FileURI
     class function GetInfo(const AFileURI: string; AInfo: IAIMPFileInfo): Boolean; overload;
@@ -302,13 +304,14 @@ begin
     S.Append('(');
 
     AddField(S, sFieldID, 'INT');
-    AddField(S, sFieldFileURI, 'TEXT PRIMARY KEY COLLATE UNICODE');
+    AddField(S, sFieldOwnerID, 'INT');
+    AddField(S, sFieldAccessKey, 'STRING (18)');
     AddField(S, sFieldArtist, 'TEXT COLLATE UNICODE');
     AddField(S, sFieldTitle, 'TEXT COLLATE UNICODE');
+    AddField(S, sFieldFileURI, 'TEXT PRIMARY KEY COLLATE UNICODE');
     AddField(S, sFieldLink, 'TEXT COLLATE UNICODE');
     AddField(S, sFieldLinkBirthday, 'Double');
     AddField(S, sFieldDuration, 'Double');
-    AddField(S, sFieldOwnerID, 'INT');
     AddField(S, sFieldGenreID, 'INT');
     AddField(S, sFieldLyricsID, 'INT', True);
 
@@ -460,11 +463,33 @@ begin
   end;
 end;
 
+class procedure TAIMPVKFileSystem.VersionMigration;
+begin
+  //FROM 0 TO 1
+  //FCacheLock.Enter;
+  try
+    if FCache.Version = 0 then
+    begin
+      FCache.Exec('DROP TABLE IF EXISTS VKAudios;');
+      FCache.Version := 1;
+      FCache.Compress();
+    end;
+  finally
+    //FCacheLock.Leave;
+  end;
+end;
+
 class procedure TAIMPVKFileSystem.Initialize(AService: TVKService; ADataBase: TACLSQLiteBase);
 begin
+  FCache := ADataBase;
+
+  // VERSION MIGRATION
+  VersionMigration();
+
   FCacheLock.Enter;
   try
     FCache := ADataBase;
+
     FCache.Exec(TAIMPVKFileSystemCacheQueryBuilder.CreateAudiosTable);
     FCache.Exec(TAIMPVKFileSystemCacheQueryBuilder.CreateAudiosTableIndex);
   finally
