@@ -402,19 +402,21 @@ begin
     S.Append(' VALUES(');
     S.Append(PrepareData(AAudio.ID));
     S.Append(', ');
-    S.Append(PrepareData(TAIMPVKFileSystem.MakeFileURI(AAudio)));
+    S.Append(PrepareData(AAudio.OwnerID));
+    S.Append(', ');
+    S.Append(PrepareData(AAudio.AccessKey));
     S.Append(', ');
     S.Append(PrepareData(AAudio.Artist));
     S.Append(', ');
     S.Append(PrepareData(AAudio.Title));
+    S.Append(', ');
+    S.Append(PrepareData(TAIMPVKFileSystem.MakeFileURI(AAudio)));
     S.Append(', ');
     S.Append(PrepareData(AAudio.URL));
     S.Append(', ');
     S.Append(PrepareData(Now));
     S.Append(', ');
     S.Append(PrepareData(AAudio.Duration));
-    S.Append(', ');
-    S.Append(PrepareData(AAudio.OwnerID));
     S.Append(', ');
     S.Append(PrepareData(AAudio.GenreID));
     S.Append(', ');
@@ -521,8 +523,8 @@ begin
     PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_TITLE, AAudio.Title);
     PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_GENRE, AAudio.Genre);
     PropListSetFloat(AInfo, AIMP_FILEINFO_PROPID_DURATION, AAudio.Duration);
-    {PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_URL, AAudio.GetRealLink());
-    PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_ALBUM, 'VK Album Name');
+    PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_URL, AAudio.GetRealLink());
+    {PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_ALBUM, 'VK Album Name');
     PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_LYRICS , 'VK Lyrics Text');}
   finally
     AAudio.Free;
@@ -648,6 +650,7 @@ begin
       AAudio.OwnerID := ATable.ReadInt(TAIMPVKFileSystemCacheQueryBuilder.sFieldOwnerID);
       AAudio.Title := ATable.ReadStr(TAIMPVKFileSystemCacheQueryBuilder.sFieldTitle);
       AAudio.URL := ATable.ReadStr(TAIMPVKFileSystemCacheQueryBuilder.sFieldLink);
+      AAudio.AccessKey := ATable.ReadStr(TAIMPVKFileSystemCacheQueryBuilder.sFieldAccessKey);
     finally
       ATable.Free;
     end;
