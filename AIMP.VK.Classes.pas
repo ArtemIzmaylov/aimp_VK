@@ -82,7 +82,7 @@ type
     function Clone: TVKAudio;
     procedure Load(ANode: TACLXMLNode);
     procedure Save(ANode: TACLXMLNode);
-    function GetOwnerAndAudioIDPair: string;
+    function GetAPIPairs: string;
     function GetRealLink: string;
     //
     property AlbumID: Integer read FAlbumID write FAlbumID;
@@ -396,14 +396,14 @@ begin
   Result := VKGenres.Get(GenreID);
 end;
 
-function TVKAudio.GetOwnerAndAudioIDPair: string;
+function TVKAudio.GetAPIPairs: string;
 begin
-  Result := Format('%d_%d', [OwnerID, ID]);
+  Result := Format('%d_%d_%s', [OwnerID, ID, AccessKey]);
 end;
 
 function TVKAudio.GetRealLink: string;
 begin
-  Result := Format('https://vk.com/audio%d_%d_%s', [OwnerID, ID, AccessKey]);
+  Result := 'https://vk.com/audio' + GetAPIPairs;
 end;
 
 { TVKAudios }

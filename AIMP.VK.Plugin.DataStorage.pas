@@ -1146,7 +1146,7 @@ begin
   FStorage.EnumSystemPlaylists(
     procedure (APlaylist: TVKPlaylist)
     begin
-      AList.Add(TAIMPVKCategory.MusicFromAlbum, False, APlaylist.GetOwnerAndAudioIDPair(), APlaylist.Title);
+      AList.Add(TAIMPVKCategory.MusicFromAlbum, False, APlaylist.GetOwnerAndAudioIDPair, APlaylist.Title);
     end
   );
 end;

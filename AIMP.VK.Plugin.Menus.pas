@@ -517,7 +517,7 @@ begin
   if AAlbumID < 0 then
   begin
     if TACLInputQueryDialog.Execute(LangLoadString('AIMPVKPlugin\NewAlbum'), LangLoadString('MSG\2'), ATitle, nil, NameValidationProc) then
-      AAlbumID := Owner.Service.AudioAddAlbum(ATitle);
+      AAlbumID := Owner.Service.AudioCreatePlaylist(ATitle);
   end;
   if AAlbumID >= 0 then
   begin

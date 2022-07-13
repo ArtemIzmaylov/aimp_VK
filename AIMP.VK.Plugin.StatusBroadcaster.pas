@@ -167,7 +167,7 @@ begin
     if (FInfo <> nil) and GetVKTrack(FInfo, ATrack) then
     try
       if not Canceled then
-        Service.AudioSetBroadcast(ATrack.GetOwnerAndAudioIDPair);
+        Service.AudioSetBroadcast(ATrack.GetAPIPairs);
     finally
       ATrack.Free;
     end

@@ -142,8 +142,8 @@ type
     // Audios
     procedure AudioAdd(const OwnerID, AudioID, AlbumID: Integer); overload;
     procedure AudioAdd(const AAudios: TList<TPair<Integer, Integer>>; AlbumID: Integer); overload;
-    function AudioAddAlbum(const Title: string): Integer;
-    procedure AudioDelete(const OwnerID, AudioID: Integer);
+    function AudioCreatePlaylist(const Title: string): Integer;
+    procedure AudioDelete(const OwnerID, AudioID: Integer; PlaylistID: Integer = 0);
     function AudioGet(OwnerID, Offset: Integer; Count: Integer = MaxAudioGetCount): TVKAudios;
     function AudioGetFromPlaylist(OwnerID, PlaylistID, Offset: Integer; Count: Integer = MaxAudioGetCount): TVKAudios;
     function AudioGetByID(const OwnerAndAudioIDPair: string): TVKAudio; overload;
@@ -413,7 +413,7 @@ begin
   end;
 end;
 
-function TVKService.AudioAddAlbum(const Title: string): Integer;
+function TVKService.AudioCreatePlaylist(const Title: string): Integer;
 var
   ADoc: TACLXMLDocument;
   ANode: TACLXMLNode;
@@ -421,13 +421,14 @@ var
 begin
   AParams := TVKParams.Create;
   try
+    AParams.Add('owner_id', UserID);
     AParams.Add('title', Title);
-    ADoc := Command('audio.addAlbum', AParams);
+    ADoc := Command('audio.createPlaylist', AParams);
     try
-      if ADoc.FindNode(['response', 'album_id'], ANode) then
+      if ADoc.FindNode(['response', 'id'], ANode) then
         Result := ANode.NodeValueAsInteger
       else
-        raise EVKError.Create('VK Error: AlbumID was not found');
+        raise EVKError.Create('VK Error: ID of playlist was not found');
     finally
       ADoc.Free;
     end;
@@ -436,7 +437,7 @@ begin
   end;
 end;
 
-procedure TVKService.AudioDelete(const OwnerID, AudioID: Integer);
+procedure TVKService.AudioDelete(const OwnerID, AudioID: Integer; PlaylistID: Integer);
 var
   AParams: TVKParams;
 begin
@@ -444,6 +445,8 @@ begin
   try
     AParams.Add('owner_id', OwnerID);
     AParams.Add('audio_id', AudioID);
+    if PlaylistID <> 0 then
+      AParams.Add('playlist_id', PlaylistID);
     Command('audio.delete', AParams).Free;
   finally
     AParams.Free;

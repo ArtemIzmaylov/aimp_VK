@@ -474,7 +474,7 @@ begin
     begin
       FCache.Exec('DROP TABLE IF EXISTS VKAudios;');
       FCache.Version := 1;
-      FCache.Compress();
+      FCache.Compress;
     end;
   finally
     //FCacheLock.Leave;
@@ -486,7 +486,7 @@ begin
   FCache := ADataBase;
 
   // VERSION MIGRATION
-  VersionMigration();
+  VersionMigration;
 
   FCacheLock.Enter;
   try
@@ -523,7 +523,7 @@ begin
     PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_TITLE, AAudio.Title);
     PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_GENRE, AAudio.Genre);
     PropListSetFloat(AInfo, AIMP_FILEINFO_PROPID_DURATION, AAudio.Duration);
-    PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_URL, AAudio.GetRealLink());
+    PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_URL, AAudio.GetRealLink);
     {PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_ALBUM, 'VK Album Name');
     PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_LYRICS , 'VK Lyrics Text');}
   finally
@@ -568,7 +568,7 @@ end;
 
 class function TAIMPVKFileSystem.MakeFileURI(AItem: TVKAudio): string;
 begin
-  Result := Format(sFileURITemplate, [AItem.GetOwnerAndAudioIDPair]);
+  Result := Format(sFileURITemplate, [AItem.GetAPIPairs]);
 end;
 
 class function TAIMPVKFileSystem.ExecURIHandler(const URI: string): Boolean;
