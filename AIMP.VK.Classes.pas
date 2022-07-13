@@ -57,8 +57,6 @@ type
     procedure Save(AStream: TStream); overload;
   end;
 
-
-
   { TVKAudio }
 
   TVKAudio = class
@@ -276,6 +274,7 @@ begin
       AccessKey := Parts[2];
     Result := (AOwnerID <> 0) and (ID <> 0);
   end;
+  Parts.Free;
 end;
 
 { TVKList<T> }
