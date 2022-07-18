@@ -20,6 +20,8 @@ uses
   System.SysUtils,
   System.Classes,
   System.Generics.Collections,
+  System.StrUtils,
+  System.Types,
   // ACL
   ACL.Hashes,
   ACL.Classes.Collections,
@@ -262,19 +264,18 @@ end;
 
 function ParseOwnerAndAudioIDPair(const S: string; out AOwnerID, ID: Integer; out AccessKey: String): Boolean;
 var
-  Parts: TStrings;
+  AParts: TStringDynArray;
 begin
-  Parts := Split(S, '_');
-  Result := Parts.Count > 0;
+  AParts := SplitString(S, '_');
+  Result := Length(AParts) >= 2;
   if Result then
   begin
-    AOwnerID := StrToIntDef(Parts[0], 0);
-    ID := StrToIntDef(Parts[1], 0);
-    if Parts.Count >= 3 then
-      AccessKey := Parts[2];
+    AOwnerID := StrToIntDef(AParts[0], 0);
+    ID := StrToIntDef(AParts[1], 0);
+    if Length(AParts) >= 3 then
+      AccessKey := AParts[2];
     Result := (AOwnerID <> 0) and (ID <> 0);
   end;
-  Parts.Free;
 end;
 
 { TVKList<T> }
