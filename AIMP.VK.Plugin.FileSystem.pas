@@ -38,7 +38,8 @@ uses
   apiWrappers,
   // VK
   AIMP.VK.Classes,
-  AIMP.VK.Core;
+  AIMP.VK.Core,
+  AIMP.VK.Plugin.DataStorage;
 
 const
   sFileURISchema = 'vk';
@@ -106,6 +107,7 @@ type
   strict private const
     ObsolescenceTimeOfCache = SecsPerDay;
   public const
+    sFieldUniqueID = 'UniqueID';
     sFieldArtist = 'Artist';
     sFieldDuration = 'Duration';
     sFieldFileURI = 'FileURI';
@@ -122,7 +124,7 @@ type
     class function CreateAudiosTable: string;
     class function CreateAudiosTableIndex: string;
     class function DropLinks: string;
-    class function GetInfo(const AFileURI: string; ACheckActuality: Boolean): string;
+    class function GetInfo(const AUniqueID: string; ACheckActuality: Boolean): string;
     class function Replace(const AAudio: TVKAudio): string;
   end;
 
@@ -304,6 +306,7 @@ begin
     S.Append(sTableAudios);
     S.Append('(');
 
+    AddField(S, sFieldUniqueID, 'STRING');
     AddField(S, sFieldID, 'INT');
     AddField(S, sFieldOwnerID, 'INT');
     AddField(S, sFieldAccessKey, 'STRING (18)');
@@ -329,15 +332,15 @@ var
 begin
   S := TStringBuilder.Create;
   try
-    S.Append('CREATE INDEX IF NOT EXISTS ');
+    S.Append('CREATE UNIQUE INDEX IF NOT EXISTS ');
     S.Append(sTableAudios);
     S.Append('_');
-    S.Append(sFieldFileURI);
+    S.Append(sFieldUniqueID);
     S.Append('_index');
     S.Append(' ON ');
     S.Append(sTableAudios);
     S.Append('(');
-    S.Append(sFieldFileURI);
+    S.Append(sFieldUniqueID);
     S.Append(');');
     Result := S.ToString;
   finally
@@ -364,7 +367,7 @@ begin
   end;
 end;
 
-class function TAIMPVKFileSystemCacheQueryBuilder.GetInfo(const AFileURI: string; ACheckActuality: Boolean): string;
+class function TAIMPVKFileSystemCacheQueryBuilder.GetInfo(const AUniqueID: string; ACheckActuality: Boolean): string;
 var
   S: TStringBuilder;
 begin
@@ -373,9 +376,9 @@ begin
     S.Append('SELECT * FROM ');
     S.Append(sTableAudios);
     S.Append(' WHERE (');
-    S.Append(sFieldFileURI);
+    S.Append(sFieldUniqueID);
     S.Append(' = ');
-    S.Append(PrepareData(AFileURI));
+    S.Append(PrepareData(AUniqueID));
     S.Append(')');
     if ACheckActuality then
     begin
@@ -401,6 +404,8 @@ begin
     S.Append('REPLACE INTO ');
     S.Append(sTableAudios);
     S.Append(' VALUES(');
+    S.Append(PrepareData(AAudio.GetOwnerAndAudioIDPair));
+    S.Append(', ');
     S.Append(PrepareData(AAudio.ID));
     S.Append(', ');
     S.Append(PrepareData(AAudio.OwnerID));
@@ -469,16 +474,30 @@ end;
 class procedure TAIMPVKFileSystem.VersionMigration;
 begin
   //FROM 0 TO 1
-  //FCacheLock.Enter;
+  FCacheLock.Enter;
   try
     if FCache.Version = 0 then
     begin
       FCache.Exec('DROP TABLE IF EXISTS VKAudios;');
+      FCache.Exec('DROP TABLE IF EXISTS VKCache;');
       FCache.Version := 1;
       FCache.Compress;
     end;
   finally
-    //FCacheLock.Leave;
+    FCacheLock.Leave;
+  end;
+
+  //FROM 1 TO 2
+  FCacheLock.Enter;
+  try
+    if FCache.Version = 1 then
+    begin
+      FCache.Exec('DROP TABLE IF EXISTS VKAudios;');
+      FCache.Version := 2;
+      FCache.Compress;
+    end;
+  finally
+    FCacheLock.Leave;
   end;
 end;
 
@@ -634,27 +653,36 @@ begin
 end;
 
 class procedure TAIMPVKFileSystem.ClearTables;
+var
+  FDataStorage: TAIMPVKDataStorage;
 begin
+  FDataStorage := TAIMPVKDataStorage.Create(FService, FCache);
   FCacheLock.Enter;
   try
     if FCache <> nil then
     begin
       FCache.Exec('DELETE FROM ' + PrepareData(TAIMPVKFileSystemCacheQueryBuilder.sTableAudios) + ';');
+      FDataStorage.FlushCache(0);
       FCache.Compress;
     end
   finally
     FCacheLock.Leave;
   end;
+  FDataStorage.Destroy;
 end;
 
 
 class function TAIMPVKFileSystem.GetInfoCore(const AFileURI: string; out AAudio: TVKAudio; ACheckActuality: Boolean): Boolean;
 var
   ATable: TACLSQLiteTable;
+  FOwnerID: Integer;
+  FAudioID: Integer;
+  FAccessKey: String;
 begin
   FCacheLock.Enter;
+  ParseOwnerAndAudioIDPair(GetOwnerAndAudioIDPair(AFileURI), FOwnerID, FAudioID, FAccessKey);
   try
-    Result := (FCache <> nil) and FCache.Exec(TAIMPVKFileSystemCacheQueryBuilder.GetInfo(AFileURI, ACheckActuality), ATable);
+    Result := (FCache <> nil) and FCache.Exec(TAIMPVKFileSystemCacheQueryBuilder.GetInfo(Format('%d_%d', [FOwnerID, FAudioID]), ACheckActuality), ATable);
     if Result then
     try
       AAudio := TVKAudio.Create;
