@@ -638,8 +638,10 @@ begin
   FCacheLock.Enter;
   try
     if FCache <> nil then
+    begin
       FCache.Exec('DELETE FROM ' + PrepareData(TAIMPVKFileSystemCacheQueryBuilder.sTableAudios) + ';');
       FCache.Compress;
+    end
   finally
     FCacheLock.Leave;
   end;
