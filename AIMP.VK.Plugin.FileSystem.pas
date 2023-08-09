@@ -162,10 +162,11 @@ type
     class procedure RegisterURIHandler(const URI: string; Proc: TVKURIHandler);
 
     // Cache
+    class procedure FlushCache;
     class procedure FlushLinksCache;
+    class function GetCacheSize: Int64;
     class procedure UpdateCache(AItem: TVKAudio); overload;
     class procedure UpdateCache(AItems: TVKAudios); overload;
-    class procedure ClearTables;
   end;
 
 function GetSearchQuery(const AInfo: IAIMPFileInfo): string;
@@ -553,6 +554,11 @@ begin
   end;
 end;
 
+class function TAIMPVKFileSystem.GetCacheSize: Int64;
+begin
+  Result := acFileSize(FCache.FileName);
+end;
+
 class function TAIMPVKFileSystem.GetInfo(const AFileURI: string; out AInfo: TVKAudio; ACheckActuality: Boolean = False): Boolean;
 begin
   Result := False;
@@ -654,7 +660,7 @@ begin
   end;
 end;
 
-class procedure TAIMPVKFileSystem.ClearTables;
+class procedure TAIMPVKFileSystem.FlushCache;
 begin
   FCacheLock.Enter;
   try

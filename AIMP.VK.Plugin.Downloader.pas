@@ -136,6 +136,7 @@ type
     procedure Add(AFiles: TACLStringList);
     function CreateTask(const AFileURI: string; AErrorLog: TACLStringList = nil;
       AProgressEvent: TAIMPVKDownloadTaskProgressEvent = nil): TACLTask;
+    function GetDefaultPath: string;
     // Config
     procedure ConfigLoad(AConfig: TAIMPServiceConfig);
     procedure ConfigSave(AConfig: TAIMPServiceConfig);
@@ -148,11 +149,6 @@ implementation
 uses
   AIMP.VK.Plugin,
   AIMP.VK.Plugin.Dialogs.Downloader;
-
-function GetDefaultPathForDownloads: string;
-begin
-  Result := ShellGetMyMusic + 'VKMusic' + PathDelim;
-end;
 
 { TAIMPVKDownloadDropSourceStream }
 
@@ -408,14 +404,19 @@ begin
   Result := TAIMPVKDownloadTask.Create(FService, OutputPath, AFileURI, AErrorLog, AProgressEvent);
 end;
 
+function TAIMPVKDownloader.GetDefaultPath: string;
+begin
+  Result := ShellGetMyMusic + 'VKMusic\';
+end;
+
 procedure TAIMPVKDownloader.ConfigLoad(AConfig: TAIMPServiceConfig);
 begin
-  OutputPath := AConfig.ReadString(sConfigOutputPath, GetDefaultPathForDownloads);
+  OutputPath := AConfig.ReadString(sConfigOutputPath, GetDefaultPath);
 end;
 
 procedure TAIMPVKDownloader.ConfigSave(AConfig: TAIMPServiceConfig);
 begin
-  if (OutputPath = '') or WideSameText(OutputPath, GetDefaultPathForDownloads) then
+  if (OutputPath = '') or acSameText(OutputPath, GetDefaultPath) then
     AConfig.Delete(sConfigOutputPath)
   else
     AConfig.WriteString(sConfigOutputPath, OutputPath);

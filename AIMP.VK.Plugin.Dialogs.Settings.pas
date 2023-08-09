@@ -45,12 +45,14 @@ uses
   ACL.UI.Controls.Category,
   ACL.UI.Controls.GroupBox,
   ACL.UI.Controls.Labels,
+  ACL.UI.Controls.Panel,
   ACL.UI.Controls.TextEdit,
   ACL.UI.Dialogs,
   ACL.UI.Dialogs.FolderBrowser,
   ACL.UI.ImageList,
   ACL.Utils.RTTI,
-  ACL.Utils.Shell, ACL.UI.Controls.Panel;
+  ACL.Utils.Shell,
+  ACL.Utils.Strings;
 
 type
 
@@ -72,6 +74,7 @@ type
   TfrmVKSettings = class(TAIMPCustomOptionsFrameForm)
     B1: TACLButton;
     B2: TACLButton;
+    Button_ClearCache: TACLButton;
     CB1: TACLCheckBox;
     edDownloadPath: TACLEdit;
     GB1: TACLGroupBox;
@@ -80,8 +83,9 @@ type
     ilImages: TACLImageList;
     L1: TACLLabel;
     L2: TACLLabel;
-    ACLPanel1: TACLPanel;
-    Button_ClearCache: TACLButton;
+    Label_ClearCache: TACLLabel;
+    pnlBackground: TACLPanel;
+    lbVersion: TACLLabel;
 
     procedure B1Click(Sender: TObject);
     procedure B2Click(Sender: TObject);
@@ -93,11 +97,13 @@ type
     FOwner: TAIMPVKPlugin;
   protected
     procedure UpdateAuthInfo;
+    procedure UpdateCacheSize;
     //
     property Owner: TAIMPVKPlugin read FOwner;
   public
     constructor Create(AOwner: TAIMPVKPlugin; AParentWnd: HWND); reintroduce;
     procedure ConfigLoad;
+    procedure ConfigReset;
     procedure ConfigSave;
     procedure Localize;
   end;
@@ -139,6 +145,8 @@ begin
       TfrmVKSettings(Form).ConfigSave;
     AIMP_SERVICE_OPTIONSDIALOG_NOTIFICATION_LOCALIZATION:
       TfrmVKSettings(Form).Localize;
+    AIMP_SERVICE_OPTIONSDIALOG_NOTIFICATION_RESET:
+      TfrmVKSettings(Form).ConfigReset;
   end;
 end;
 
@@ -158,6 +166,13 @@ begin
   UpdateAuthInfo;
 end;
 
+procedure TfrmVKSettings.ConfigReset;
+begin
+  edDownloadPath.Text := Owner.Downloader.GetDefaultPath;
+  GB2.CheckBox.Checked := False;
+  CB1.Checked := False;
+end;
+
 procedure TfrmVKSettings.ConfigSave;
 begin
   Owner.Downloader.OutputPath := edDownloadPath.Text;
@@ -174,8 +189,10 @@ begin
   TACLDialogsStrs.FolderBrowserNewFolder := LangLoadString('CommonDialogs\B3');;
   TACLDialogsStrs.MsgDlgButtons[mbCancel] := LangLoadString('CommonDialogs\B2');
   TACLDialogsStrs.MsgDlgButtons[mbOK] := LangLoadString('CommonDialogs\B1');
+  lbVersion.Caption := FormatPluginVersion;
 
   UpdateAuthInfo;
+  UpdateCacheSize;
 end;
 
 procedure TfrmVKSettings.UpdateAuthInfo;
@@ -195,6 +212,12 @@ begin
   L1.URL := 'https://vk.com/id' + IntToStr(Owner.Service.UserID);
 end;
 
+procedure TfrmVKSettings.UpdateCacheSize;
+begin
+  Label_ClearCache.Caption := LangLoadString('AIMPVKPlugin.Settings\' + Label_ClearCache.Name) +
+    ' (' + acFormatSize(TAIMPVKFileSystem.GetCacheSize) + ')';
+end;
+
 procedure TfrmVKSettings.B1Click(Sender: TObject);
 begin
   TAIMPVKFileSystem.ExecURIHandler(sFileURIAuthDialog);
@@ -209,8 +232,9 @@ end;
 
 procedure TfrmVKSettings.Button_ClearCacheClick(Sender: TObject);
 begin
-  TAIMPVKFileSystem.ClearTables;
+  TAIMPVKFileSystem.FlushCache;
   Button_ClearCache.Enabled := false;
+  UpdateCacheSize;
 end;
 
 procedure TfrmVKSettings.edDownloadPathButtons0Click(Sender: TObject);

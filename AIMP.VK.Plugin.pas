@@ -88,6 +88,7 @@ type
     property WorkPath: string read GetWorkPath;
   end;
 
+function FormatPluginVersion: UnicodeString;
 implementation
 
 uses
