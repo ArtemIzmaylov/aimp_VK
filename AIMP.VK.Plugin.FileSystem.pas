@@ -24,6 +24,7 @@ uses
   System.Generics.Collections,
   System.Generics.Defaults,
   // ACL
+  ACL.Classes.Collections,
   ACL.Hashes,
   ACL.Sqlite3,
   ACL.Threading,
@@ -189,7 +190,8 @@ var
   ATemp: UnicodeString;
 begin
   ATemp := acExtractFileNameWithoutExt(AFileName);
-  Result := acFindString(' - ', ATemp, APos);
+  APos := acPos(' - ', ATemp);
+  Result := APos > 0;
   if Result then
   begin
     AArtist := Copy(ATemp, 1, APos - 1);
@@ -554,7 +556,7 @@ end;
 class function TAIMPVKFileSystem.GetInfo(const AFileURI: string; out AInfo: TVKAudio; ACheckActuality: Boolean = False): Boolean;
 begin
   Result := False;
-  if acGetScheme(AFileURI) = sFileURISchema then
+  if acExtractFileScheme(AFileURI) = sFileURISchema then
   begin
     Result := GetInfoCore(AFileURI, AInfo, ACheckActuality);
     if (not Result or (AInfo.URL = '')) and ACheckActuality then

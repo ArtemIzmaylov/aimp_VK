@@ -215,7 +215,7 @@ end;
 function TVKParams.Add(const AParam, AValue: string): TVKParams;
 begin
   Result := Self;
-  inherited Add(AParam + '=' + acStringFromAnsi(EncodeUTF8(AValue), CP_ACP));
+  inherited Add(AParam + '=' + acStringFromAnsiString(acEncodeUTF8(AValue), CP_ACP));
 end;
 
 function TVKParams.Add(const AParam: string; AValue: Integer): TVKParams;
@@ -275,10 +275,10 @@ end;
 
 function TVKServicePermissionsHelper.ToString: string;
 var
-  B: TStringBuilder;
+  B: TACLStringBuilder;
   I: TVKServicePermission;
 begin
-  B := TACLStringBuilderManager.Get;
+  B := TACLStringBuilder.Get;
   try
     for I := Low(I) to High(I) do
     begin
@@ -291,7 +291,7 @@ begin
     end;
     Result := B.ToString;
   finally
-    TACLStringBuilderManager.Release(B);
+    B.Release;
   end;
 end;
 
@@ -327,7 +327,8 @@ function TVKService.AuthorizationParseAnswer(const AAnswer: string): Boolean;
   var
     APos, APosEnd: Integer;
   begin
-    if acFindString(AParam + '=', URL, APos) then
+    APos := acPos(AParam + '=', URL);
+    if APos > 0 then
     begin
       APos := APos + Length(AParam) + 1;
       APosEnd := acPos('&', URL, False, APos + 1);
@@ -1069,7 +1070,7 @@ begin
     AParams.Add(AVarName, AAlias);
     ADocument := Command(AMethodName, AParams);
     try
-      if ADocument.FindNode([XMLResponse, AnsiString(ANodeName), 'id'], ANode) then
+      if ADocument.FindNode([XMLResponse, ANodeName, 'id'], ANode) then
         Result := StrToIntDef(ANode.NodeValue, 0);
     finally
       ADocument.Free;

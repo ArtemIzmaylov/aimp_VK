@@ -37,7 +37,6 @@ uses
   ACL.Threading,
   ACL.Utils.FileSystem,
   ACL.Utils.Strings,
-  ACL.Utils.Strings.Transcode,
   // VK
   AIMP.VK.Classes,
   AIMP.VK.Core;
@@ -1512,11 +1511,8 @@ begin
 end;
 
 class function TAIMPVKGroupingTreeValue.Encode(const AValue: string; ACategory: TAIMPVKCategory): string;
-var
-  A1, A2: AnsiChar;
 begin
-  TACLHexcode.Encode(Ord(ACategory), A1, A2);
-  Result := Char(A1) + Char(A2);
+  Result := TACLHexcode.Encode(Ord(ACategory));
   if not (ACategory in [Search, SearchByUser, SearchByGroup]) then
     Result := Result + AValue;
 end;

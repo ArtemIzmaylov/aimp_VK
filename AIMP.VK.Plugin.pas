@@ -101,7 +101,7 @@ const
 function FormatPluginVersion: UnicodeString;
 begin
   Result := Format('v%d.%s.%d %s', [__VersionID div 1000,
-    TrackFormat((__VersionID mod 1000) div 10), __VersionBuild, __VersionPrefix]);
+    acFormatTrackNo((__VersionID mod 1000) div 10), __VersionBuild, __VersionPrefix]);
 end;
 
 { TAIMPVKPlugin }

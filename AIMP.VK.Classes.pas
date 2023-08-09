@@ -298,7 +298,7 @@ begin
   try
     Clear;
     ANode := AXML[0];
-    if ANode.NodeName = AnsiString(ClassName) then
+    if ANode.NodeName = ClassName then
       Load(ANOde);
   finally
     AXML.Free;
@@ -311,7 +311,7 @@ var
 begin
   AXML := TACLXMLDocument.Create;
   try
-    Save(AXML.Add(AnsiString(ClassName)));
+    Save(AXML.Add(ClassName));
     AXML.SaveToStream(AStream, TACLXMLDocumentFormatSettings.Binary);
   finally
     AXML.Free;
