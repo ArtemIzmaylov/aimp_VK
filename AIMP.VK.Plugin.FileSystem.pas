@@ -655,36 +655,31 @@ begin
 end;
 
 class procedure TAIMPVKFileSystem.ClearTables;
-var
-  FDataStorage: TAIMPVKDataStorage;
 begin
-  FDataStorage := TAIMPVKDataStorage.Create(FService, FCache);
   FCacheLock.Enter;
   try
     if FCache <> nil then
     begin
       FCache.Exec('DELETE FROM ' + PrepareData(TAIMPVKFileSystemCacheQueryBuilder.sTableAudios) + ';');
-      FDataStorage.FlushCache(0);
+      FCache.Exec(TAIMPVKDataStorageCacheQueryBuilder.DeleteAll);
       FCache.Compress;
     end
   finally
     FCacheLock.Leave;
   end;
-  FDataStorage.Destroy;
 end;
-
 
 class function TAIMPVKFileSystem.GetInfoCore(const AFileURI: string; out AAudio: TVKAudio; ACheckActuality: Boolean): Boolean;
 var
   ATable: TACLSQLiteTable;
-  FOwnerID: Integer;
-  FAudioID: Integer;
-  FAccessKey: String;
+  AOwnerID: Integer;
+  AAudioID: Integer;
+  AAccessKey: String;
 begin
   FCacheLock.Enter;
-  ParseOwnerAndAudioIDPair(GetOwnerAndAudioIDPair(AFileURI), FOwnerID, FAudioID, FAccessKey);
+  ParseOwnerAndAudioIDPair(GetOwnerAndAudioIDPair(AFileURI), AOwnerID, AAudioID, AAccessKey);
   try
-    Result := (FCache <> nil) and FCache.Exec(TAIMPVKFileSystemCacheQueryBuilder.GetInfo(Format('%d_%d', [FOwnerID, FAudioID]), ACheckActuality), ATable);
+    Result := (FCache <> nil) and FCache.Exec(TAIMPVKFileSystemCacheQueryBuilder.GetInfo(Format('%d_%d', [AOwnerID, AAudioID]), ACheckActuality), ATable);
     if Result then
     try
       AAudio := TVKAudio.Create;
