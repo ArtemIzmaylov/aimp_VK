@@ -1090,7 +1090,7 @@ begin
   try
     AParams.Add('user_ids', UserID);
     AParams.Add('fields', '');
-    AParams.Add('name_case', 'norm');
+    AParams.Add('name_case', 'Nom');
 
     ADocument := Command('users.get', AParams);
     try

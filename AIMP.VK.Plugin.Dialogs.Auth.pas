@@ -3,7 +3,7 @@
 {*                AIMP VK Plugin                *}
 {*                                              *}
 {*                Artem Izmaylov                *}
-{*                (C) 2016-2020                 *}
+{*                (C) 2016-2023                 *}
 {*                 www.aimp.ru                  *}
 {*            Mail: support@aimp.ru             *}
 {*                                              *}
@@ -16,36 +16,37 @@ unit AIMP.VK.Plugin.Dialogs.Auth;
 interface
 
 uses
-  // System
   Winapi.Windows,
   Winapi.Messages,
   Winapi.UrlMon,
+  // System
   System.Classes,
   System.ImageList,
   System.Math,
   System.SysUtils,
   System.Variants,
-  SHDocVw,
   // Vcl
   Vcl.Controls,
   Vcl.Dialogs,
+  Vcl.ExtCtrls,
   Vcl.Forms,
   Vcl.Graphics,
+  Vcl.Imaging.pngimage,
   Vcl.ImgList,
-  Vcl.OleCtrls,
-  Vcl.StdCtrls,
   // ACL
   ACL.Threading,
-  ACL.UI.Forms,
   ACL.UI.Controls.BaseControls,
   ACL.UI.Controls.BaseEditors,
+  ACL.UI.Controls.Buttons,
+  ACL.UI.Controls.GroupBox,
+  ACL.UI.Controls.Labels,
   ACL.UI.Controls.TextEdit,
+  ACL.UI.Forms,
   ACL.UI.ImageList,
   ACL.Utils.FileSystem,
   ACL.Utils.Registry,
   ACL.Utils.Shell,
   ACL.Utils.Strings,
-  ACL.Web,
   // VK
   AIMP.VK.Core,
   AIMP.VK.Plugin.FileSystem;
@@ -55,20 +56,22 @@ type
   { TfrmVKAuth }
 
   TfrmVKAuth = class(TACLForm)
-    WebBrowser: TWebBrowser;
-    edURL: TACLEdit;
-    ilGlyphs: TACLImageList;
-    procedure WebBrowserNavigateComplete2(ASender: TObject; const pDisp: IDispatch; const URL: OleVariant);
-    procedure edURLKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
-    procedure edURLNavigateClick(Sender: TObject);
-    procedure edURLOpenInBrowserClick(Sender: TObject);
-    procedure WebBrowserNavigateError(ASender: TObject; const pDisp: IDispatch; const URL, Frame,
-      StatusCode: OleVariant; var Cancel: WordBool);
+    btnGrantAccess: TACLButton;
+    btnOpenURL: TACLButton;
+    edAnswer: TACLEdit;
+    GB1: TACLGroupBox;
+    GB2: TACLGroupBox;
+    GB3: TACLGroupBox;
+    imHint1: TImage;
+    L3: TACLLabel;
+    L4: TACLLabel;
+    procedure btnOpenURLClick(Sender: TObject);
+    procedure btnGrantAccessClick(Sender: TObject);
+    procedure edAnswerChange(Sender: TObject);
   strict private
     FService: TVKService;
   protected
-    procedure DoShow; override;
-    //
+    procedure ApplyLocalizations;
     property Service: TVKService read FService;
   public
     constructor Create(AService: TVKService; AOwnerWndHandle: THandle); reintroduce;
@@ -82,56 +85,13 @@ uses
 
 {$R *.dfm}
 
-type
-  TIEMode = (iemUnknown, iemIE7, iemIE8, iemIE9, iemIE10);
-
-function GetIEVersion: Integer;
-var
-  AKey: HKEY;
-  AValue: string;
-begin
-  Result := 0;
-  if acRegOpenRead(HKEY_LOCAL_MACHINE, 'SOFTWARE\Microsoft\Internet Explorer', AKey) then
-  try
-    AValue := acRegReadStr(AKey, 'svcVersion');
-    if AValue = '' then
-      AValue := acRegReadStr(AKey, 'Version');
-    Result := StrToIntDef(Copy(AValue, 1, Pos('.', AValue) - 1), 0);
-  finally
-    acRegClose(AKey);
-  end;
-end;
-
-procedure SetEmbeddedWebBrowserMode(AMode: TIEMode);
-const
-  Map: array[TIEMode] of Integer = (0, 7000, 8888, 9999, 10001);
-  REG_KEY = 'Software\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BROWSER_EMULATION';
-var
-  AKey: HKEY;
-begin
-  AKey := acRegOpenCreate(HKEY_CURRENT_USER, REG_KEY);
-  if AKey <> 0 then
-  try
-    acRegWriteInt(AKey, acExtractFileName(acSelfExeName), Map[AMode]);
-  finally
-    acRegClose(AKey);
-  end;
-end;
-
 { TfrmVKAuth }
 
 class procedure TfrmVKAuth.Execute(AService: TVKService);
 begin
-  case Sign(GetIEVersion - 9) of
-    0: SetEmbeddedWebBrowserMode(iemIE9);
-    1: SetEmbeddedWebBrowserMode(iemIE10);
-  else
-    SetEmbeddedWebBrowserMode(iemIE8); // < IE8 is not supported by VK
-  end;
-
   with TfrmVKAuth.Create(AService, MainWindowGetHandle) do
   try
-    Caption := LangLoadString('AIMPVKPlugin\L1');
+    ApplyLocalizations;
     ShowModal;
   finally
     Free;
@@ -144,48 +104,41 @@ begin
   FService := AService;
   if TACLStayOnTopHelper.IsStayOnTop(AOwnerWndHandle) then
     FormStyle := fsStayOnTop;
+  edAnswerChange(nil);
 end;
 
-procedure TfrmVKAuth.DoShow;
+procedure TfrmVKAuth.ApplyLocalizations;
 begin
-  inherited DoShow;
-//  'http://www.whoishostingthis.com/tools/user-agent/'
-  WebBrowser.Navigate(Service.AuthorizationGetURL);
+  Caption := LangLoadString('AIMPVKPlugin\L1');
+  GB1.Caption := LangLoadString('AIMPVKPlugin.Auth\L1');
+  GB2.Caption := LangLoadString('AIMPVKPlugin.Auth\L2');
+  GB3.Caption := LangLoadString('AIMPVKPlugin.Auth\L5');
+  L3.Caption := LangLoadString('AIMPVKPlugin.Auth\L3');
+  L4.Caption := LangLoadString('AIMPVKPlugin.Auth\L4');
+  btnGrantAccess.Caption := LangLoadString('AIMPVKPlugin.Auth\B2');
+  btnOpenURL.Caption := LangLoadString('AIMPVKPlugin.Auth\B1');
 end;
 
-procedure TfrmVKAuth.edURLNavigateClick(Sender: TObject);
+procedure TfrmVKAuth.btnGrantAccessClick(Sender: TObject);
+var
+  AAnswer: string;
 begin
-  WebBrowser.Navigate(edURL.Text);
+  AAnswer := edAnswer.Text;
+  if acBeginsWith(AAnswer, sVKCallback) and Service.AuthorizationParseAnswer(AAnswer) then
+    ModalResult := mrOk
+  else
+    raise EInvalidArgument.Create(LangLoadString('AIMPVKPlugin.Auth\E1'));
 end;
 
-procedure TfrmVKAuth.edURLOpenInBrowserClick(Sender: TObject);
+procedure TfrmVKAuth.btnOpenURLClick(Sender: TObject);
 begin
+  edAnswer.Text := '';
   ShellExecuteURL(Service.AuthorizationGetURL);
 end;
 
-procedure TfrmVKAuth.edURLKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+procedure TfrmVKAuth.edAnswerChange(Sender: TObject);
 begin
-  if Key = VK_RETURN then
-  begin
-    edURLNavigateClick(Sender);
-    Key := 0;
-  end;
-end;
-
-procedure TfrmVKAuth.WebBrowserNavigateComplete2(ASender: TObject; const pDisp: IDispatch; const URL: OleVariant);
-begin
-  edURL.Text := URL;
-  if acBeginsWith(URL, sVKCallback) then
-  begin
-    if Service.AuthorizationParseAnswer(URL) then
-      ModalResult := mrOk;
-  end;
-end;
-
-procedure TfrmVKAuth.WebBrowserNavigateError(ASender: TObject; const pDisp: IDispatch;
-  const URL, Frame, StatusCode: OleVariant; var Cancel: WordBool);
-begin
-  // do nothing
+  btnGrantAccess.Enabled := edAnswer.Text <> '';
 end;
 
 initialization
