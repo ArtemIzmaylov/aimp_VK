@@ -3,7 +3,7 @@
 {*                AIMP VK Plugin                *}
 {*                                              *}
 {*                Artem Izmaylov                *}
-{*                (C) 2016-2020                 *}
+{*                (C) 2016-2023                 *}
 {*                 www.aimp.ru                  *}
 {*            Mail: support@aimp.ru             *}
 {*                                              *}
@@ -22,7 +22,9 @@ uses
   // ACL
   ACL.Classes,
   ACL.Classes.Collections,
+  ACL.Graphics,
   ACL.Sqlite3,
+  ACL.UI.Application,
   ACL.Utils.Common,
   ACL.Utils.Strings,
   ACL.Web,
@@ -35,7 +37,9 @@ uses
   // API
   apiCore,
   apiFileManager,
+  apiGUI,
   apiMenu,
+  apiMessages,
   apiMusicLibrary,
   apiObjects,
   apiOptions,
@@ -69,6 +73,7 @@ type
     FForms: TACLObjectList;
     FService: TVKService;
     FStatusContoller: TAIMPVKStatusBroadcastController;
+    FUIHelper: TObject;
 
     procedure ConfigLoad;
     procedure ConfigSave;
@@ -95,6 +100,22 @@ uses
   AIMP.VK.Plugin.Menus,
   AIMP.VK.Plugin.FileSystem,
   AIMP.VK.Plugin.Dialogs.Settings;
+
+type
+
+  { TAIMPVKUIModeHelper }
+
+  TAIMPVKUIModeHelper = class(TACLUnknownObject, IAIMPMessageHook)
+  strict private
+    FService: IAIMPServiceMessageDispatcher;
+    procedure SynchronizeUIMode;
+  protected
+    // IAIMPMessageHook
+    procedure CoreMessage(Message: Cardinal; Param1: Integer; Param2: Pointer; var Result: HRESULT); stdcall;
+  public
+    constructor Create;
+    destructor Destroy; override;
+  end;
 
 const
 {$I AIMP.VK.Version.inc}
@@ -143,6 +164,7 @@ begin
   FDownloader := TAIMPVKDownloader.Create(Service);
   FDataStorage := TAIMPVKDataStorage.Create(Service, FDataBase);
   FStatusContoller := TAIMPVKStatusBroadcastController.Create(Service);
+  FUIHelper := TAIMPVKUIModeHelper.Create;
   ConfigLoad;
 
   Core.RegisterExtension(IAIMPServiceFileInfo, TAIMPVKExtensionFileInfo.Create);
@@ -159,6 +181,7 @@ begin
   ConfigSave;
   FForms.Clear;
   FDataStorage := nil;
+  FreeAndNil(FUIHelper);
   FreeAndNil(FStatusContoller);
   FreeAndNil(FDownloader);
   TAIMPVKFileSystem.Finalize;
@@ -237,6 +260,43 @@ end;
 function TAIMPVKPlugin.GetWorkPath: string;
 begin
   Result := CoreGetProfilePath
+end;
+
+{ TAIMPVKUIModeHelper }
+
+constructor TAIMPVKUIModeHelper.Create;
+begin
+  if CoreGetService(IAIMPServiceMessageDispatcher, FService) then
+    FService.Hook(Self);
+  SynchronizeUIMode;
+end;
+
+destructor TAIMPVKUIModeHelper.Destroy;
+begin
+  if FService <> nil then
+    FService.Unhook(Self);
+  inherited;
+end;
+
+procedure TAIMPVKUIModeHelper.CoreMessage(Message: Cardinal; Param1: Integer; Param2: Pointer; var Result: HRESULT);
+begin
+  if Message = AIMP_MSG_EVENT_UI_MODE then
+    SynchronizeUIMode;
+end;
+
+procedure TAIMPVKUIModeHelper.SynchronizeUIMode;
+var
+  AMode: IAIMPUIMode;
+begin
+  if CoreGetService(IAIMPUIMode, AMode) then
+  begin
+    TACLApplication.ColorSchema := TACLColorSchema.CreateFromColor(
+      PropListGetInt32(AMode, AIMPUI_MODE_PROPID_ACCENT));
+    TACLApplication.DarkMode := TACLBoolean.From(
+      PropListGetInt32(AMode, AIMPUI_MODE_PROPID_STYLE) = AIMPUI_STYLE_DARK);
+    TACLApplication.TargetDPI :=
+      PropListGetInt32(AMode, AIMPUI_MODE_PROPID_DPI);
+  end;
 end;
 
 end.

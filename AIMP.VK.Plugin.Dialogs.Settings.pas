@@ -49,6 +49,7 @@ uses
   ACL.UI.Controls.TextEdit,
   ACL.UI.Dialogs,
   ACL.UI.Dialogs.FolderBrowser,
+  ACL.UI.Forms,
   ACL.UI.ImageList,
   ACL.Utils.RTTI,
   ACL.Utils.Shell,
@@ -71,7 +72,7 @@ type
 
   { TfrmVKSettings }
 
-  TfrmVKSettings = class(TAIMPCustomOptionsFrameForm)
+  TfrmVKSettings = class(TACLForm)
     B1: TACLButton;
     B2: TACLButton;
     Button_ClearCache: TACLButton;
