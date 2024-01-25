@@ -318,7 +318,7 @@ var
 begin
   if TAIMPVKFileSystem.GetInfo(FFileURI, AInfo, True) then
   try
-    if not Canceled then
+    if not IsCanceled then
     try
       FTargetFileNameIsCreatedByMe := False;
       FTargetFileName := Format('%d-%d-%s - %s.mp3', [AInfo.OwnerID, AInfo.ID, AInfo.Artist, AInfo.Title]);
@@ -332,7 +332,7 @@ begin
       end;
     finally
       FreeAndNil(FStream);
-      if FTargetFileNameIsCreatedByMe and ((FError <> '') or Canceled) then
+      if FTargetFileNameIsCreatedByMe and ((FError <> '') or IsCanceled) then
         acDeleteFile(FTargetFileName);
     end;
     if FError <> '' then
@@ -365,7 +365,7 @@ end;
 
 function TAIMPVKDownloadTask.OnData(Data: PByte; Count: Integer): Boolean;
 begin
-  Result := (FStream.Write(Data^, Count) = Count) and not Canceled;
+  Result := (FStream.Write(Data^, Count) = Count) and not IsCanceled;
 end;
 
 procedure TAIMPVKDownloadTask.OnProgress(const AReadBytes, ATotalBytes: Int64);

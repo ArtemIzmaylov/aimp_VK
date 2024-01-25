@@ -138,7 +138,7 @@ begin
     if AInfo <> nil then
     try
       FTitle := Format('%s - %s', [AInfo.Artist, AInfo.Title]);
-      if not Canceled then
+      if not IsCanceled then
         FLyrics := FService.AudioGetLyrics(AInfo.LyricsID);
     finally
       AInfo.Free;
@@ -147,7 +147,7 @@ begin
     on E: Exception do
       FLyrics := E.ToString;
   end;
-  FOnComplete(FTitle, FLyrics, Canceled);
+  FOnComplete(FTitle, FLyrics, IsCanceled);
 end;
 
 function TAIMPVKLoadLyrics.CreateInfo(const AFileURI: string): TVKAudio;
@@ -159,11 +159,11 @@ begin
   Result := nil;
   if TAIMPVKFileSystem.IsOurFile(AFileURI) then
   begin
-    if not (TAIMPVKFileSystem.GetInfo(AFileURI, Result) or Canceled) then
+    if not (TAIMPVKFileSystem.GetInfo(AFileURI, Result) or IsCanceled) then
       Result := FService.AudioGetByID(TAIMPVKFileSystem.GetOwnerAndAudioIDPair(AFileURI));
   end
   else
-    if GetFileInfo(AFileURI, AFileInfo) and not Canceled then
+    if GetFileInfo(AFileURI, AFileInfo) and not IsCanceled then
     begin
       AAudios := FService.AudioSearch(GetSearchQuery(AFileInfo));
       try

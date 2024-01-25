@@ -3,7 +3,7 @@
 {*                AIMP VK Plugin                *}
 {*                                              *}
 {*                Artem Izmaylov                *}
-{*                (C) 2016-2021                 *}
+{*                (C) 2016-2024                 *}
 {*                 www.aimp.ru                  *}
 {*            Mail: support@aimp.ru             *}
 {*                                              *}
@@ -17,10 +17,11 @@ interface
 
 uses
   Winapi.Windows,
-  System.SysUtils,
+  // System
   System.Classes,
   System.Generics.Collections,
   System.StrUtils,
+  System.SysUtils,
   System.Types,
   // ACL
   ACL.Hashes,
@@ -62,7 +63,10 @@ type
   { TVKAudio }
 
   TVKAudio = class
-  protected
+  strict private
+    FAccessKey: string;
+    FAlbum: string;
+    FAlbumArtUrl: string;
     FAlbumID: Integer;
     FArtist: string;
     FDate: Int64;
@@ -73,7 +77,6 @@ type
     FOwnerID: Integer;
     FTitle: string;
     FURL: string;
-    FAccessKey: string;
 
     function GetGenre: string;
   public
@@ -85,7 +88,9 @@ type
     function GetOwnerAndAudioIDPair: string;
     function GetAPIPairs: string;
     function GetRealLink: string;
-    //
+    //# Properties
+    property Album: string read FAlbum write FAlbum;
+    property AlbumArtUrl: string read FAlbumArtUrl write FAlbumArtUrl;
     property AlbumID: Integer read FAlbumID write FAlbumID;
     property Artist: string read FArtist write FArtist;
     property Date: Int64 read FDate write FDate;
@@ -115,7 +120,7 @@ type
   { TVKPlaylist }
 
   TVKPlaylist = class
-  protected
+
     FId: Integer;
     FOwnerId: Integer;
     FTitle: UnicodeString;
@@ -357,6 +362,8 @@ begin
   FTitle := ASource.Title;
   FDate := ASource.Date;
   FAccessKey := ASource.AccessKey;
+  FAlbumArtUrl := ASource.AlbumArtUrl;
+  FAlbum := ASource.Album;
 end;
 
 function TVKAudio.Clone: TVKAudio;
@@ -374,7 +381,17 @@ begin
 
   if ANode.FindNode('album', ASubNode) then
   begin
+    FAlbum := ASubNode.NodeValueByName('title');
     FAlbumID := ASubNode.NodeValueByNameAsInteger('id');
+    if ASubNode.FindNode('thumb', ASubNode) then
+    begin
+      for var I := ASubNode.Count - 1 downto 0 do
+        if ASubNode[I].NodeName.StartsWith('photo_') then
+        begin
+          FAlbumArtUrl := ASubNode[I].NodeValue;
+          Break;
+        end;
+    end;
   end;
 
   FDuration := ANode.NodeValueByNameAsInteger('duration');
@@ -393,7 +410,12 @@ begin
   ANode.Add('artist').NodeValue := FArtist;
   ANode.Add('duration').NodeValueAsInteger := FDuration;
   ANode.Add('genre_id').NodeValueAsInteger := FGenreID;
-  ANode.Add('album').Add('id').NodeValueAsInteger := FAlbumID;
+  with ANode.Add('album') do
+  begin
+    Add('id').NodeValueAsInteger := FAlbumID;
+    Add('title').NodeValue := FAlbum;
+    Add('thumb').Add('photo_max').NodeValue := FAlbumArtUrl;
+  end;
   ANode.Add('lyrics_id').NodeValueAsInteger := FLyricsID;
   ANode.Add('owner_id').NodeValueAsInteger := FOwnerID;
   ANode.Add('title').NodeValue := FTitle;

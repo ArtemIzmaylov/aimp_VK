@@ -3,7 +3,7 @@
 {*                AIMP VK Plugin                *}
 {*                                              *}
 {*                Artem Izmaylov                *}
-{*                (C) 2016-2021                 *}
+{*                (C) 2016-2024                 *}
 {*                 www.aimp.ru                  *}
 {*            Mail: support@aimp.ru             *}
 {*                                              *}
@@ -18,11 +18,12 @@ interface
 
 uses
   Winapi.Windows,
-  System.SysUtils,
+  // System
   System.Classes,
   System.Generics.Collections,
   System.JSON,
   System.Math,
+  System.SysUtils,
   // VK
   AIMP.VK.Classes,
   // ACL
@@ -72,9 +73,9 @@ type
 
   { TVKServicePermissions }
 
-  TVKServicePermission = (vkpNotify, vkpFriends, vkpPhotos, vkpAudio, vkpVideo, vkpDocs, vkpNotes, vkpPages, vkpStatus,
-    vkpOffers, vkpQuestions, vkpWall, vkpGroups, vkpMessages, vkpEmail, vkpNotifications, vkpStats, vkpAds, vkpMarket,
-    vkpOffline);
+  TVKServicePermission = (vkpNotify, vkpFriends, vkpPhotos, vkpAudio, vkpVideo,
+    vkpDocs, vkpNotes, vkpPages, vkpStatus, vkpOffers, vkpQuestions, vkpWall, vkpGroups,
+    vkpMessages, vkpEmail, vkpNotifications, vkpStats, vkpAds, vkpMarket, vkpOffline);
   TVKServicePermissions = set of TVKServicePermission;
 
   TVKServicePermissionsHelper = record helper for TVKServicePermissions
@@ -84,9 +85,9 @@ type
       4096, 4194304, 524288, 1048576, 32768, 134217728, 65536
     );
     MapStr: array[TVKServicePermission] of string = (
-      'notify', 'friends', 'photos', 'audio', 'video', 'docs', 'notes', 'pages', 'status', 'offers',
-      'questions', 'wall', 'groups', 'messages', 'email', 'notifications', 'stats', 'ads', 'market',
-      'offline'
+      'notify', 'friends', 'photos', 'audio', 'video', 'docs', 'notes', 'pages',
+      'status', 'offers', 'questions', 'wall', 'groups', 'messages', 'email',
+      'notifications', 'stats', 'ads', 'market', 'offline'
     );
   public
     constructor Create(Code: Integer);
@@ -917,10 +918,12 @@ begin
       raise Exception.Create('Connection Error: ' + AErrorInfo.ToString);
     AStream.Position := 0;
   {$IFDEF VK_DUMP}
-    AStream.SaveToFile('B:\1.dump');
+    AStream.SaveToFile('B:\vkDump.json');
   {$ENDIF}
-
     Result := JsonToXml(AStream);
+  {$IFDEF VK_DUMP}
+    Result.SaveToFile('B:\vkDump.xml');
+  {$ENDIF}
     if Result.FindNode('error', AErrorNode) then
     try
       AErrorCode := StrToIntDef(AErrorNode.NodeValueByName('error_code'), -1);

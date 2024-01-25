@@ -1,9 +1,9 @@
-{************************************************}
+﻿{************************************************}
 {*                                              *}
 {*                AIMP VK Plugin                *}
 {*                                              *}
 {*                Artem Izmaylov                *}
-{*                (C) 2016-2020                 *}
+{*                (C) 2016-2024                 *}
 {*                 www.aimp.ru                  *}
 {*            Mail: support@aimp.ru             *}
 {*                                              *}
@@ -108,7 +108,9 @@ type
   strict private const
     ObsolescenceTimeOfCache = SecsPerDay;
   public const
-    sFieldUniqueID = 'UniqueID';
+    sFieldAccessKey = 'AccessKey';
+    sFieldAlbum = 'Album';
+    sFieldAlbumArtUrl = 'AlbumArtUrl';
     sFieldArtist = 'Artist';
     sFieldDuration = 'Duration';
     sFieldFileURI = 'FileURI';
@@ -118,8 +120,8 @@ type
     sFieldLinkBirthday = 'LinkBirthday';
     sFieldLyricsID = 'LyricsID';
     sFieldOwnerID = 'OwnerID';
-    sFieldAccessKey = 'AccessKey';
     sFieldTitle = 'Title';
+    sFieldUniqueID = 'UniqueID';
     sTableAudios = 'VKAudios';
   public
     class function CreateAudiosTable: string;
@@ -139,18 +141,18 @@ type
     class var FServiceLock: TACLCriticalSection;
     class var FURIHandlers: TDictionary<string, TVKURIHandler>;
 
-    class function GetInfoCore(const AFileURI: string; out AAudio: TVKAudio; ACheckActuality: Boolean = False): Boolean;
+    class function GetInfoCore(const AFileURI: string;
+      out AAudio: TVKAudio; ACheckActuality: Boolean = False): Boolean;
   public
     class constructor Create;
     class destructor Destroy;
-
-    class procedure Finalize;
     class procedure Initialize(AService: TVKService; ADataBase: TACLSQLiteBase);
-    class procedure VersionMigration;
+    class procedure Finalize;
 
     // FileURI
     class function GetInfo(const AFileURI: string; AInfo: IAIMPFileInfo): Boolean; overload;
-    class function GetInfo(const AFileURI: string; out AInfo: TVKAudio; ACheckActuality: Boolean = False): Boolean; overload;
+    class function GetInfo(const AFileURI: string;
+      out AInfo: TVKAudio; ACheckActuality: Boolean = False): Boolean; overload;
     class function GetOwnerAndAudioIDPair(const AFileURI: string): string;
     class function IsOurFile(const AFileURI: IAIMPString): Boolean; overload;
     class function IsOurFile(const AFileURI: string): Boolean; overload;
@@ -219,7 +221,8 @@ end;
 
 function TAIMPVKExtensionFileInfo.GetFileInfo(FileURI: IAIMPString; Info: IAIMPFileInfo): HRESULT;
 begin
-  Result := acBoolToHRESULT(TAIMPVKFileSystem.IsOurFile(FileURI) and TAIMPVKFileSystem.GetInfo(IAIMPStringToString(FileURI), Info));
+  Result := acBoolToHRESULT(TAIMPVKFileSystem.IsOurFile(FileURI) and
+    TAIMPVKFileSystem.GetInfo(IAIMPStringToString(FileURI), Info));
 end;
 
 { TAIMPVKExtensionFileSystem }
@@ -320,7 +323,9 @@ begin
     AddField(S, sFieldLinkBirthday, 'Double');
     AddField(S, sFieldDuration, 'Double');
     AddField(S, sFieldGenreID, 'INT');
-    AddField(S, sFieldLyricsID, 'INT', True);
+    AddField(S, sFieldLyricsID, 'INT');
+    AddField(S, sFieldAlbum, 'TEXT COLLATE UNICODE');
+    AddField(S, sFieldAlbumArtUrl, 'TEXT COLLATE UNICODE', True);
 
     S.Append(');');
     Result := S.ToString;
@@ -430,6 +435,10 @@ begin
     S.Append(PrepareData(AAudio.GenreID));
     S.Append(', ');
     S.Append(PrepareData(AAudio.LyricsID));
+    S.Append(', ');
+    S.Append(PrepareData(AAudio.Album));
+    S.Append(', ');
+    S.Append(PrepareData(AAudio.AlbumArtUrl));
     S.Append(');');
     Result := S.ToString;
   finally
@@ -474,47 +483,19 @@ begin
   end;
 end;
 
-class procedure TAIMPVKFileSystem.VersionMigration;
-begin
-  //FROM 0 TO 1
-  FCacheLock.Enter;
-  try
-    if FCache.Version = 0 then
-    begin
-      FCache.Exec('DROP TABLE IF EXISTS VKAudios;');
-      FCache.Exec('DROP TABLE IF EXISTS VKCache;');
-      FCache.Version := 1;
-      FCache.Compress;
-    end;
-  finally
-    FCacheLock.Leave;
-  end;
-
-  //FROM 1 TO 2
-  FCacheLock.Enter;
-  try
-    if FCache.Version = 1 then
-    begin
-      FCache.Exec('DROP TABLE IF EXISTS VKAudios;');
-      FCache.Version := 2;
-      FCache.Compress;
-    end;
-  finally
-    FCacheLock.Leave;
-  end;
-end;
-
 class procedure TAIMPVKFileSystem.Initialize(AService: TVKService; ADataBase: TACLSQLiteBase);
 begin
-  FCache := ADataBase;
-
-  // VERSION MIGRATION
-  VersionMigration;
-
   FCacheLock.Enter;
   try
     FCache := ADataBase;
-
+    if FCache.Version = 0 then
+      FCache.Exec('DROP TABLE IF EXISTS VKCache;');
+    if FCache.Version < 3 then
+    begin
+      FCache.Exec('DROP TABLE IF EXISTS VKAudios;');
+      FCache.Version := 3;
+      FCache.Compress;
+    end;
     FCache.Exec(TAIMPVKFileSystemCacheQueryBuilder.CreateAudiosTable);
     FCache.Exec(TAIMPVKFileSystemCacheQueryBuilder.CreateAudiosTableIndex);
   finally
@@ -546,9 +527,13 @@ begin
     PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_TITLE, AAudio.Title);
     PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_GENRE, AAudio.Genre);
     PropListSetFloat(AInfo, AIMP_FILEINFO_PROPID_DURATION, AAudio.Duration);
-    PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_URL, AAudio.GetRealLink);
-    {PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_ALBUM, 'VK Album Name');
-    PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_LYRICS , 'VK Lyrics Text');}
+    PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_ALBUM, AAudio.Album);
+    // FIXME
+    // по-хорошему нужно делать собственный провайдер, но на скорую руку можно и так -
+    // AIMP поймет, что в поле "ссылка" ссылка на обложку и загрузит ее сам, без ухищрений.
+    // А оригинальный линк поместим пока в другое поле...
+    PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_URL, AAudio.AlbumArtUrl{GetRealLink});
+    PropListSetStr(AInfo, AIMP_FILEINFO_PROPID_COMMENT, AAudio.GetRealLink);
   finally
     AAudio.Free;
   end;
@@ -559,7 +544,8 @@ begin
   Result := acFileSize(FCache.FileName);
 end;
 
-class function TAIMPVKFileSystem.GetInfo(const AFileURI: string; out AInfo: TVKAudio; ACheckActuality: Boolean = False): Boolean;
+class function TAIMPVKFileSystem.GetInfo(const AFileURI: string;
+  out AInfo: TVKAudio; ACheckActuality: Boolean = False): Boolean;
 begin
   Result := False;
   if acExtractFileScheme(AFileURI) = sFileURISchema then
@@ -675,7 +661,8 @@ begin
   end;
 end;
 
-class function TAIMPVKFileSystem.GetInfoCore(const AFileURI: string; out AAudio: TVKAudio; ACheckActuality: Boolean): Boolean;
+class function TAIMPVKFileSystem.GetInfoCore(
+  const AFileURI: string; out AAudio: TVKAudio; ACheckActuality: Boolean): Boolean;
 var
   ATable: TACLSQLiteTable;
   AOwnerID: Integer;
@@ -685,10 +672,15 @@ begin
   FCacheLock.Enter;
   ParseOwnerAndAudioIDPair(GetOwnerAndAudioIDPair(AFileURI), AOwnerID, AAudioID, AAccessKey);
   try
-    Result := (FCache <> nil) and FCache.Exec(TAIMPVKFileSystemCacheQueryBuilder.GetInfo(Format('%d_%d', [AOwnerID, AAudioID]), ACheckActuality), ATable);
+    Result := (FCache <> nil) and FCache.Exec(
+      TAIMPVKFileSystemCacheQueryBuilder.GetInfo(
+      Format('%d_%d', [AOwnerID, AAudioID]), ACheckActuality), ATable);
     if Result then
     try
       AAudio := TVKAudio.Create;
+      AAudio.AccessKey := ATable.ReadStr(TAIMPVKFileSystemCacheQueryBuilder.sFieldAccessKey);
+      AAudio.Album := ATable.ReadStr(TAIMPVKFileSystemCacheQueryBuilder.sFieldAlbum);
+      AAudio.AlbumArtUrl := ATable.ReadStr(TAIMPVKFileSystemCacheQueryBuilder.sFieldAlbumArtUrl);
       AAudio.Artist := ATable.ReadStr(TAIMPVKFileSystemCacheQueryBuilder.sFieldArtist);
       AAudio.Duration := ATable.ReadInt(TAIMPVKFileSystemCacheQueryBuilder.sFieldDuration);
       AAudio.GenreID := ATable.ReadInt(TAIMPVKFileSystemCacheQueryBuilder.sFieldGenreID);
@@ -697,7 +689,6 @@ begin
       AAudio.OwnerID := ATable.ReadInt(TAIMPVKFileSystemCacheQueryBuilder.sFieldOwnerID);
       AAudio.Title := ATable.ReadStr(TAIMPVKFileSystemCacheQueryBuilder.sFieldTitle);
       AAudio.URL := ATable.ReadStr(TAIMPVKFileSystemCacheQueryBuilder.sFieldLink);
-      AAudio.AccessKey := ATable.ReadStr(TAIMPVKFileSystemCacheQueryBuilder.sFieldAccessKey);
     finally
       ATable.Free;
     end;

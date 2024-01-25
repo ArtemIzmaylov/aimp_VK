@@ -166,13 +166,13 @@ begin
   try
     if (FInfo <> nil) and GetVKTrack(FInfo, ATrack) then
     try
-      if not Canceled then
+      if not IsCanceled then
         Service.AudioSetBroadcast(ATrack.GetAPIPairs);
     finally
       ATrack.Free;
     end
     else
-      if not Canceled then
+      if not IsCanceled then
         Service.AudioSetBroadcast('');
   finally
     FOwner.FTaskHandle := 0;
@@ -191,7 +191,7 @@ begin
   Result := TAIMPVKFileSystem.GetInfo(PropListGetStr(AFileInfo, AIMP_FILEINFO_PROPID_FILENAME), ATrack);
   if not Result then
   try
-    if FOwner.AllowSearch and not Canceled then
+    if FOwner.AllowSearch and not IsCanceled then
     begin
       ATracks := Service.AudioSearch(GetSearchQuery(AFileInfo));
       try
