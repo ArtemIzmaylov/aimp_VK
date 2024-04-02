@@ -5,3 +5,5 @@ __history
 *.local
 *.identcache
 DCU
+*.dll
+aimp_VK.RES

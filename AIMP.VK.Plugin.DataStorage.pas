@@ -3,7 +3,7 @@
 {*                AIMP VK Plugin                *}
 {*                                              *}
 {*                Artem Izmaylov                *}
-{*                (C) 2016-2020                 *}
+{*                (C) 2016-2024                 *}
 {*                 www.aimp.ru                  *}
 {*            Mail: support@aimp.ru             *}
 {*                                              *}
@@ -53,8 +53,8 @@ const
 
 type
   TAIMPVKDataStorageCache = class;
-  TAIMPVKCategory = (Unknown, Music, MusicFromPlaylist, MusicFromWall, MyFriends, MyGroups,
-    Recommended, Popular, Search, SearchByUser, SearchByGroup, MyFaves, MyFavePeople, MyFavePosts, MyNewsFeed);
+  TAIMPVKCategory = (Unknown, Music, MusicFromPlaylist, MusicFromWall, MyFriends,
+    MyGroups, Recommended, Popular, Search, SearchByUser, SearchByGroup, MyNewsFeed);
 
   { EAIMPVKDataStorageError }
 
@@ -100,7 +100,6 @@ type
     destructor Destroy; override;
     procedure EnumSystemPlaylists(AProc: TProc<TVKPlaylist>);
     procedure EnumMyPlaylists(AProc: TProc<TVKPlaylist>);
-    procedure EnumMyFavePeople(AProc: TProc<TVKFriend>);
     procedure EnumMyFriends(AProc: TProc<TVKFriend>);
     procedure EnumMyGroups(AProc: TProc<TVKGroup>);
     // IAIMPMLDataProvider
@@ -190,10 +189,13 @@ type
 
   TAIMPVKDataProviderGroupingTreeData = class(TList<TAIMPVKDataProviderGroupingTreeNode>)
   public
-    function Add(const ACategory: TAIMPVKCategory; AHasChildren: Boolean): PAIMPVKDataProviderGroupingTreeNode; overload;
-    function Add(const ACategory: TAIMPVKCategory; AHasChildren: Boolean; const AValue: OleVariant): PAIMPVKDataProviderGroupingTreeNode; overload;
-    function Add(const ACategory: TAIMPVKCategory; AHasChildren: Boolean; const AValue: OleVariant;
-      const ADisplayValue: UnicodeString; AImageIndex: Integer = AIMPML_FIELDIMAGE_NOTE): PAIMPVKDataProviderGroupingTreeNode; overload;
+    function Add(const ACategory: TAIMPVKCategory;
+      AHasChildren: Boolean): PAIMPVKDataProviderGroupingTreeNode; overload;
+    function Add(const ACategory: TAIMPVKCategory;
+      AHasChildren: Boolean; const AValue: OleVariant): PAIMPVKDataProviderGroupingTreeNode; overload;
+    function Add(const ACategory: TAIMPVKCategory;
+      AHasChildren: Boolean; const AValue: OleVariant; const ADisplayValue: UnicodeString;
+      AImageIndex: Integer = AIMPML_FIELDIMAGE_NOTE): PAIMPVKDataProviderGroupingTreeNode; overload;
   end;
 
   { TAIMPVKDataProviderGroupingTreeSelection }
@@ -207,8 +209,6 @@ type
     FMode: TAIMPVKCategory;
     FStorage: TAIMPVKDataStorage;
 
-    procedure PopulateFavePeople(AList: TAIMPVKDataProviderGroupingTreeData);
-    procedure PopulateFaves(AList: TAIMPVKDataProviderGroupingTreeData);
     procedure PopulateFriends(AList: TAIMPVKDataProviderGroupingTreeData);
     procedure PopulateGroups(AList: TAIMPVKDataProviderGroupingTreeData);
     procedure PopulateIndex(AList: TAIMPVKDataProviderGroupingTreeData);
@@ -271,7 +271,6 @@ type
     function GetPlaylist(OwnerID, PlaylistID: Integer): string;
     function GetAudios(ACategory: TAIMPVKCategory; const AData: string): TVKAudios;
     function GetAudiosFromAlbum(const AOwnerAndAlbumIDPair: string): TVKAudios;
-    function GetAudiosFromFavePosts: TVKAudios;
     function GetAudiosFromID(ID: Integer): TVKAudios; overload;
     function GetAudiosFromID(ID: Integer; APlaylistID: Integer): TVKAudios; overload;
     function GetAudiosFromNews: TVKAudios;
@@ -408,8 +407,7 @@ const
   Map: array[TAIMPVKCategory] of UnicodeString = ('',
     'Music', 'MusicFromPlaylist', 'Wall', 'MyFriends', 'MyGroups',
     'MyRecommendations', 'Popular', 'Search', 'SearchByUserID',
-    'SearchByGroupID', 'MyFaves', 'MyFavePeople', 'MyFavePosts',
-    'MyNewsFeed'
+    'SearchByGroupID', 'MyNewsFeed'
   );
 begin
   Result := LangLoadString('AIMPVKPlugin\' + Map[ACategory]);
@@ -431,40 +429,25 @@ begin
 end;
 
 procedure TAIMPVKDataStorage.EnumSystemPlaylists(AProc: TProc<TVKPlaylist>);
-const
-  SystemPlaylists: Array[0..7] of Integer = (-21, -22, -23, -25, -26, -27, -30, -31);
+//const
+//  SystemPlaylists: array[0..7] of Integer = (-21, -22, -23, -25, -26, -27, -30, -31);
 begin
-  with Cache.Request<TVKPlaylists>(TVKPlaylists.Create, 'systemplaylists', procedure (APlaylists: TVKPlaylists)
-    var
-      ID: Integer;
-      ATempResult: TVKPlaylist;
-    begin
-      for ID in SystemPlaylists do
-      begin
-        ATempResult := Service.AudioGetPlaylistByID(Service.UserID, ID);
-        APlaylists.Add(ATempResult);
-      end;
-    end) do
-  try
-    Enum(AProc);
-  finally
-    Free;
-  end;
+//  with Cache.Request<TVKPlaylists>(TVKPlaylists.Create, 'systemplaylists',
+//    procedure (APlaylists: TVKPlaylists)
+//    begin
+//      for var ID in SystemPlaylists do
+//        APlaylists.Add(Service.AudioGetPlaylistByID(Service.UserID, ID));
+//    end) do
+//  try
+//    Enum(AProc);
+//  finally
+//    Free;
+//  end;
 end;
 
 procedure TAIMPVKDataStorage.EnumMyPlaylists(AProc: TProc<TVKPlaylist>);
 begin
   with AudioGetPlaylists(Service.UserID) do
-  try
-    Enum(AProc);
-  finally
-    Free;
-  end;
-end;
-
-procedure TAIMPVKDataStorage.EnumMyFavePeople(AProc: TProc<TVKFriend>);
-begin
-  with Cache.Request<TVKFriends>(TVKFriends.Create, 'myfavepeople', Service.FaveGetUsers) do
   try
     Enum(AProc);
   finally
@@ -1038,10 +1021,6 @@ begin
     case FMode of
       TAIMPVKCategory.Unknown:
         PopulateIndex(Result);
-      TAIMPVKCategory.MyFaves:
-        PopulateFaves(Result);
-      TAIMPVKCategory.MyFavePeople:
-        PopulateFavePeople(Result);
       TAIMPVKCategory.Search:
         PopulateSearchCategories(Result);
       TAIMPVKCategory.Music:
@@ -1070,21 +1049,6 @@ begin
     end);
 end;
 
-procedure TAIMPVKDataProviderGroupingTreeSelection.PopulateFavePeople(AList: TAIMPVKDataProviderGroupingTreeData);
-begin
-  FStorage.EnumMyFavePeople(
-    procedure (AFriend: TVKFriend)
-    begin
-      AList.Add(TAIMPVKCategory.Music, True, AFriend.UserID, AFriend.DisplayName, AIMPML_FIELDIMAGE_ARTIST);
-    end);
-end;
-
-procedure TAIMPVKDataProviderGroupingTreeSelection.PopulateFaves(AList: TAIMPVKDataProviderGroupingTreeData);
-begin
-  AList.Add(TAIMPVKCategory.MyFavePeople, True);
-  AList.Add(TAIMPVKCategory.MyFavePosts, False);
-end;
-
 procedure TAIMPVKDataProviderGroupingTreeSelection.PopulateGroups(AList: TAIMPVKDataProviderGroupingTreeData);
 begin
   FStorage.EnumMyGroups(
@@ -1101,7 +1065,6 @@ begin
 //  AList.Add(TAIMPVKCategory.MyNewsFeed, False);
   AList.Add(TAIMPVKCategory.MyFriends, True);
   AList.Add(TAIMPVKCategory.MyGroups, True);
-  AList.Add(TAIMPVKCategory.MyFaves, True);
   AList.Add(TAIMPVKCategory.Recommended, True);
   AList.Add(TAIMPVKCategory.Search, True);
   AList.Add(TAIMPVKCategory.Popular, True);
@@ -1121,14 +1084,16 @@ begin
     for I := 0 to APlaylists.Count - 1 do
     begin
       APlaylist := APlaylists.List[I];
-      AList.Add(TAIMPVKCategory.MusicFromPlaylist, False, APlaylist.GetOwnerAndAudioIDPair, APlaylist.Title, AIMPML_FIELDIMAGE_DISK);
+      AList.Add(TAIMPVKCategory.MusicFromPlaylist, False,
+        APlaylist.GetOwnerAndAudioIDPair, APlaylist.Title, AIMPML_FIELDIMAGE_DISK);
     end;
   finally
     APlaylists.Free;
   end;
 end;
 
-procedure TAIMPVKDataProviderGroupingTreeSelection.PopulatePopularGenres(AList: TAIMPVKDataProviderGroupingTreeData);
+procedure TAIMPVKDataProviderGroupingTreeSelection.PopulatePopularGenres(
+  AList: TAIMPVKDataProviderGroupingTreeData);
 begin
   VKGenres.Enum(
     procedure (const Key: Integer; const Value: string)
@@ -1137,26 +1102,29 @@ begin
     end);
 end;
 
-procedure TAIMPVKDataProviderGroupingTreeSelection.PopulateSearchCategories(AList: TAIMPVKDataProviderGroupingTreeData);
+procedure TAIMPVKDataProviderGroupingTreeSelection.PopulateSearchCategories(
+  AList: TAIMPVKDataProviderGroupingTreeData);
 begin
   AList.Add(TAIMPVKCategory.SearchByGroup, False);
   AList.Add(TAIMPVKCategory.SearchByUser, False);
 end;
 
-procedure TAIMPVKDataProviderGroupingTreeSelection.PopulateRecommended(AList: TAIMPVKDataProviderGroupingTreeData);
+procedure TAIMPVKDataProviderGroupingTreeSelection.PopulateRecommended(
+  AList: TAIMPVKDataProviderGroupingTreeData);
 begin
   FStorage.EnumSystemPlaylists(
     procedure (APlaylist: TVKPlaylist)
     begin
-      AList.Add(TAIMPVKCategory.MusicFromPlaylist, False, APlaylist.GetOwnerAndAudioIDPair, APlaylist.Title);
-    end
-  );
+      AList.Add(TAIMPVKCategory.MusicFromPlaylist,
+        False, APlaylist.GetOwnerAndAudioIDPair, APlaylist.Title);
+    end);
 end;
 
 { TAIMPVKDataProviderTable }
 
-constructor TAIMPVKDataProviderTable.Create(AStorage: TAIMPVKDataStorage; ACategory: TAIMPVKCategory;
-  const AData: string; AFields: IAIMPObjectList; AOffset: Integer; AIgnoreCache: Boolean = False);
+constructor TAIMPVKDataProviderTable.Create(AStorage: TAIMPVKDataStorage;
+  ACategory: TAIMPVKCategory; const AData: string; AFields: IAIMPObjectList;
+  AOffset: Integer; AIgnoreCache: Boolean = False);
 
   function ExcludeTrailingSlashes(const S: string): string;
   begin
@@ -1259,7 +1227,8 @@ begin
   Result := (FData <> nil) and (FIndex < FData.Count);
 end;
 
-function TAIMPVKDataProviderTable.CachedRequest(const AQueryID: string; AProc: TCachedRequestProc): TVKAudios;
+function TAIMPVKDataProviderTable.CachedRequest(
+  const AQueryID: string; AProc: TCachedRequestProc): TVKAudios;
 var
   ACached: TVKAudios;
   I: Integer;
@@ -1308,7 +1277,8 @@ begin
   end;
 end;
 
-function TAIMPVKDataProviderTable.GetAudios(ACategory: TAIMPVKCategory; const AData: string): TVKAudios;
+function TAIMPVKDataProviderTable.GetAudios(
+  ACategory: TAIMPVKCategory; const AData: string): TVKAudios;
 begin
   Result := nil;
   try
@@ -1323,8 +1293,6 @@ begin
         Result := GetAudiosFromID(StrToIntDef(AData, 0));
       TAIMPVKCategory.MusicFromPlaylist:
         Result := GetAudiosFromAlbum(AData);
-      TAIMPVKCategory.MyFavePosts:
-        Result := GetAudiosFromFavePosts;
       TAIMPVKCategory.Popular:
         Result := GetPopularAudios(StrToIntDef(AData, 0));
       TAIMPVKCategory.Recommended:
@@ -1350,18 +1318,12 @@ var
   AOwnerID, AAlbumID: Integer;
   AAccessKey: string;
 begin
-  if not ParseOwnerAndAudioIDPair(AOwnerAndAlbumIDPair, AOwnerID, AAlbumID, AAccessKey) or (AOwnerID = 0) or (AAlbumID = 0) then
+  if not ParseOwnerAndAudioIDPair(AOwnerAndAlbumIDPair,
+    AOwnerID, AAlbumID, AAccessKey) or (AOwnerID = 0) or (AAlbumID = 0)
+  then
     raise EAIMPVKDataStorageError.Create(LangLoadString('AIMPVKPlugin\NoData'));
-  Result := GetAudiosFromID(AOwnerID, AAlbumID);
-end;
 
-function TAIMPVKDataProviderTable.GetAudiosFromFavePosts: TVKAudios;
-begin
-  Result := CachedRequest('myfaveposts',
-    function: TVKAudios
-    begin
-      Result := Service.FaveGetAudiosFromPosts;
-    end);
+  Result := GetAudiosFromID(AOwnerID, AAlbumID);
 end;
 
 function TAIMPVKDataProviderTable.GetAudiosFromID(ID: Integer): TVKAudios;
@@ -1397,7 +1359,8 @@ begin
     end);
 end;
 
-function TAIMPVKDataProviderTable.GetAudiosFromSearchQuery(ACategory: TAIMPVKCategory; const AData: string): TVKAudios;
+function TAIMPVKDataProviderTable.GetAudiosFromSearchQuery(
+  ACategory: TAIMPVKCategory; const AData: string): TVKAudios;
 var
   ID: Integer;
 begin
