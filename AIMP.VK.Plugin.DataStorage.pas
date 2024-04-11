@@ -397,7 +397,7 @@ begin
     if Result in [Search, SearchByUser, SearchByGroup] then
     begin
       AData := PropListGetStr(AFilter, AIMPML_FILTER_SEARCHSTRING);
-      CheckResult(AFilter.SetValueAsObject(AIMPML_FILTER_SEARCHSTRING, nil));
+      AFilter.SetValueAsObject(AIMPML_FILTER_SEARCHSTRING, nil);
     end;
   end;
 end;
